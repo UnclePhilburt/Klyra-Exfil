@@ -24,6 +24,7 @@ public class DoorRadialMenu : MonoBehaviour
     private int selectedOption = -1;
     private Door targetDoor;
     private DoorInteractable doorInteractable;
+    private DoorSnakeCam doorSnakeCam;
     private bool hasExecuted = false;
 
     private class MenuOption
@@ -41,15 +42,17 @@ public class DoorRadialMenu : MonoBehaviour
     {
         targetDoor = door;
         doorInteractable = interactable;
+        doorSnakeCam = door?.GetComponent<DoorSnakeCam>();
         hasExecuted = false;
         holdTimer = 0f;
         isMenuOpen = false;
 
         menuOptions = new MenuOption[]
         {
-            new MenuOption { name = "OPEN", angle = 90f, action = () => targetDoor?.Toggle() },
-            new MenuOption { name = "BREACH", angle = 210f, action = () => targetDoor?.Breach() },
-            new MenuOption { name = "EXPLOSIVE", angle = 330f, action = () => doorInteractable?.PlaceExplosiveCharge() }
+            new MenuOption { name = "OPEN", angle = 45f, action = () => targetDoor?.Toggle() },
+            new MenuOption { name = "SNAKE CAM", angle = 135f, action = () => doorSnakeCam?.ToggleSnakeCam() },
+            new MenuOption { name = "BREACH", angle = 225f, action = () => targetDoor?.Breach() },
+            new MenuOption { name = "EXPLOSIVE", angle = 315f, action = () => doorInteractable?.PlaceExplosiveCharge() }
         };
 
         InitializeGraphics();
@@ -147,7 +150,8 @@ public class DoorRadialMenu : MonoBehaviour
             return;
         }
 
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        // Invert Y direction for correct radial menu orientation
+        float angle = Mathf.Atan2(-direction.y, direction.x) * Mathf.Rad2Deg;
         if (angle < 0) angle += 360f;
 
         float closestDist = float.MaxValue;

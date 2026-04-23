@@ -12,7 +12,20 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(del nul 2)",
-      "Bash($null)"
+      "Bash($null)",
+      "Bash(git push:*)",
+      "Bash(dir \"C:\\Users\\CodyW\\OneDrive\\Documents\\Klyra Exfil\\Klyra Exfil\\Assets\")",
+      "Bash(dir \"C:\\Users\\CodyW\\OneDrive\\Documents\\Klyra Exfil\\Klyra Exfil\\Assets\\Scripts\")",
+      "Bash(dir \"C:\\Users\\CodyW\\OneDrive\\Documents\\Klyra Exfil\\Klyra Exfil\\Assets\\Opsive\" -Depth 2)",
+      "Bash(find:*)",
+      "Bash(dir \"C:\\Users\\CodyW\\OneDrive\\Documents\\Klyra Exfil\\Klyra Exfil\\Assets\\Opsive\\UltimateCharacterController\\Add-Ons\\Multiplayer\\PhotonPUN\\Demo\\Prefabs\\Items\" /b)",
+      "Bash(dir \"C:\\Users\\CodyW\\OneDrive\\Documents\\Klyra Exfil\\Klyra Exfil\\Assets\\Opsive\\UltimateCharacterController\\Add-Ons\\Multiplayer\\PhotonPUN\\Demo\\Inventory\" /b)",
+      "WebSearch",
+      "WebFetch(domain:opsive.com)",
+      "Bash(powershell -Command \"(Get-Content ''Stylized Fog (Stepped).shader'') -replace ''#pragma target 4.5'', ''#pragma target 3.5'' | Set-Content ''Stylized Fog (Stepped).shader''\")",
+      "Bash(powershell -Command \"(Get-Content ''Stylized Sky (Desktop).shader'') -replace ''#pragma target 4.5'', ''#pragma target 3.5'' | Set-Content ''Stylized Sky (Desktop).shader''\")",
+      "Bash(powershell -Command \"(Get-Content ''Stylized Clouds (Soft).shader'') -replace ''#pragma target 4.5'', ''#pragma target 3.5'' | Set-Content ''Stylized Clouds (Soft).shader''\")",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []

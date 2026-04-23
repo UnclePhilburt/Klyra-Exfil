@@ -5,6 +5,7 @@ PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
+    serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 1798176879195562, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
@@ -55,118 +56,100 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 114954888597556978, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+    - target: {fileID: 114885768360565424, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
+      propertyPath: m_ImpactLayers.m_Bits
+      value: 3422552065
+      objectReference: {fileID: 0}
+    - target: {fileID: 114954888597556978, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: m_ItemDefinition
       value: 
-      objectReference: {fileID: 114074367643677680, guid: 16d30180d9012ca48889477ac8da5303,
-        type: 2}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
-      propertyPath: managedReferences[6414610655020056590]
+      objectReference: {fileID: 114074367643677680, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
+      propertyPath: 'managedReferences[6414610655020056590]'
       value: Opsive.UltimateCharacterController Opsive.UltimateCharacterController.Items.Actions.Modules.Throwable.SpawnProjectile
       objectReference: {fileID: 0}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: managedReferences[6414610655020056590].m_ID
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: managedReferences[6414610655020056590].m_Name
       value: 
       objectReference: {fileID: 0}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
-      propertyPath: m_ProjectileModuleGroup.m_Modules.Array.data[0]
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
+      propertyPath: 'm_ProjectileModuleGroup.m_Modules.Array.data[0]'
       value: 6414610655020056590
       objectReference: {fileID: 0}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: managedReferences[6414610655020056590].m_Enabled
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: managedReferences[6414610655020056590].m_StartLayer
       value: 2
       objectReference: {fileID: 0}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: managedReferences[707337137804804106].m_ThrownObject
       value: 
       objectReference: {fileID: 0}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: managedReferences[6414610655020056590].m_ThrownObject
       value: 
-      objectReference: {fileID: 4063123627202793485, guid: e595004d8a9e1344aa7f605349486ac0,
-        type: 3}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+      objectReference: {fileID: 4063123627202793485, guid: e595004d8a9e1344aa7f605349486ac0, type: 3}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: managedReferences[6414610655020056590].m_States.Array.size
       value: 2
       objectReference: {fileID: 0}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: managedReferences[6414610655020056590].m_DisableVisibleObject
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: managedReferences[6414610655020056590].m_States.Array.data[0].m_Name
       value: RightHandSecondaryFragGrenade
       objectReference: {fileID: 0}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: managedReferences[6414610655020056590].m_States.Array.data[1].m_Name
       value: Default
       objectReference: {fileID: 0}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: managedReferences[6414610655020056590].m_States.Array.data[0].m_Preset
       value: 
-      objectReference: {fileID: 11400000, guid: 3e729dc53ef272a409abadc1a242b506,
-        type: 2}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+      objectReference: {fileID: 11400000, guid: 3e729dc53ef272a409abadc1a242b506, type: 2}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: managedReferences[6414610655020056590].m_States.Array.data[1].m_Preset
       value: 
       objectReference: {fileID: 0}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: managedReferences[6414610655020056590].m_Bindings.m_Bindings.Array.size
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: managedReferences[6414610655020056590].m_States.Array.data[0].m_Default
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: managedReferences[6414610655020056590].m_States.Array.data[1].m_Default
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: managedReferences[6414610655020056590].m_ActivateThrowableObjectEvent.m_Duration
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: managedReferences[6414610655020056590].m_States.Array.data[0].m_BlockList.Array.size
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: managedReferences[6414610655020056590].m_States.Array.data[1].m_BlockList.Array.size
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53,
-        type: 3}
+    - target: {fileID: 4014958820399706361, guid: cfc693cce96a090429991703e7c7ae53, type: 3}
       propertyPath: managedReferences[6414610655020056590].m_ActivateThrowableObjectEvent.m_WaitForAnimationEvent
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: cfc693cce96a090429991703e7c7ae53, type: 3}

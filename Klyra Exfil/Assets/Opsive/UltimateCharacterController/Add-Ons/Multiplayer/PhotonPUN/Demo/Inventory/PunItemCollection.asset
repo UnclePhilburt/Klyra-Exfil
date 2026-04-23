@@ -1,5 +1,22 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-5310187782341302983
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e74c32144565264eb86dc7514aca7f7, type: 3}
+  m_Name: Flashbang
+  m_EditorClassIdentifier: Opsive.UltimateCharacterController::Opsive.UltimateCharacterController.Inventory.ItemType
+  m_ID: 27
+  m_CategoryIDs: bf70bfd8c5986f382767c004
+  m_Capacity: 2147483647
+  m_Prefabs:
+  - {fileID: 4913250935814032891, guid: fd48e0bf7fe38654fb2fbb8e3a16dfb4, type: 3}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -47,6 +64,7 @@ MonoBehaviour:
   - {fileID: 114327507680120068}
   - {fileID: 4021143365342896098}
   - {fileID: 4906038157856389806}
+  - {fileID: -5310187782341302983}
 --- !u!114 &114038489858704770
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -44,6 +44,7 @@ public class DoorInteractable : MonoBehaviour
     private GameObject nearbyPlayer;
     private DoorRadialMenu radialMenu;
     private bool isHoldingF = false;
+    private GUIStyle promptStyle;
 
     void Awake()
     {
@@ -61,6 +62,13 @@ public class DoorInteractable : MonoBehaviour
         }
         rb.isKinematic = true; // Don't let physics move the door
         rb.useGravity = false;
+
+        // Setup GUI style
+        promptStyle = new GUIStyle();
+        promptStyle.fontSize = 18;
+        promptStyle.normal.textColor = Color.white;
+        promptStyle.alignment = TextAnchor.MiddleCenter;
+        promptStyle.fontStyle = FontStyle.Bold;
     }
 
     void Update()
@@ -113,6 +121,14 @@ public class DoorInteractable : MonoBehaviour
 
         if (characterLocomotion != null)
         {
+            // Check if character is alive (has Health component and is alive)
+            Opsive.UltimateCharacterController.Traits.Health health = characterLocomotion.GetComponent<Opsive.UltimateCharacterController.Traits.Health>();
+            if (health != null && !health.IsAlive())
+            {
+                Debug.Log("Dead character detected - ignoring");
+                return;
+            }
+
             Debug.Log("Player detected! You can now interact with the door.");
             playerNearby = true;
             nearbyPlayer = characterLocomotion.gameObject;
@@ -227,22 +243,37 @@ public class DoorInteractable : MonoBehaviour
     void OnGUI()
     {
         // Don't show prompt if door or doorTransform is destroyed or if radial menu is open
-        if (showPrompt && playerNearby && door != null && door.doorTransform != null && !radialMenu.IsMenuOpen())
+        if (showPrompt && playerNearby && door != null && door.doorTransform != null && !radialMenu.IsMenuOpen() && Camera.main != null)
         {
-            // Simple on-screen prompt
-            string message;
-            if (door.isOpen)
-            {
-                message = "Tap F to close | Hold F for options";
-            }
-            else
-            {
-                message = "Tap F to open | Hold F for options";
-            }
+            // Get door position in world space
+            Vector3 doorWorldPos = door.doorTransform.position + Vector3.up * 1.5f;
+            Vector3 screenPos = Camera.main.WorldToScreenPoint(doorWorldPos);
 
-            // Center of screen, slightly below middle
-            GUI.Label(new Rect(Screen.width / 2 - 200, Screen.height / 2 + 50, 400, 30), message,
-                new GUIStyle() { fontSize = 14, normal = new GUIStyleState() { textColor = Color.white }, alignment = TextAnchor.MiddleCenter });
+            // Only show if in front of camera
+            if (screenPos.z > 0)
+            {
+                // Flip Y coordinate (GUI coords are top-left origin)
+                screenPos.y = Screen.height - screenPos.y;
+
+                // Determine message
+                string message;
+                if (door.isOpen)
+                {
+                    message = "Tap F to close | Hold F for options";
+                }
+                else
+                {
+                    message = "Tap F to open | Hold F for options";
+                }
+
+                // Draw background box
+                Rect bgRect = new Rect(screenPos.x - 200, screenPos.y - 15, 400, 30);
+                GUI.Box(bgRect, "");
+
+                // Draw text
+                Rect textRect = new Rect(screenPos.x - 200, screenPos.y - 15, 400, 30);
+                GUI.Label(textRect, message, promptStyle);
+            }
         }
     }
 }
