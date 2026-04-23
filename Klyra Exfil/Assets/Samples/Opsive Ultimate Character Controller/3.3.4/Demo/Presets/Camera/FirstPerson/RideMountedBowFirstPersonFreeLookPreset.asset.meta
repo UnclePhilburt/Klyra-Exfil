@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 12b69998c6b33e048b6985ed573d9b7e
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 233710
+  packageName: Ultimate Character Controller
+  packageVersion: 3.3.3p1
+  assetPath: Packages/com.opsive.ultimatecharactercontroller/Samples~/Demo/Presets/Camera/FirstPerson/RideMountedBowFirstPersonFreeLookPreset.asset
+  uploadId: 882936

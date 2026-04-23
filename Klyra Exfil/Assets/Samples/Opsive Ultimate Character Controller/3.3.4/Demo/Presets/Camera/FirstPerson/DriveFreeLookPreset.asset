@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 114f4adff47823d4aadb77159ef6731f, type: 3}
+  m_Name: DriveFreeLookPreset
+  m_EditorClassIdentifier: 
+  m_Data:
+    m_ObjectType: Opsive.UltimateCharacterController.FirstPersonController.Camera.ViewTypes.FreeLook
+    m_ValueHashes: 
+    m_LongValueHashes: 93c39460099158d651239f6fae4a434e234fb8d5a94a434e8d92ea81269f9f7b9c61eb90733732854b547f579201e6958d785f4fce0614dda23bf3da594ea3d69c131f227c205bf2ee7f38987b205bf2945465965b489a7e6b898d5b4da80232
+    m_ValuePositions: 00000000000000000400000008000000080000000c000000180000002400000024000000280000002c00000038000000
+    m_Values: 000070c200007042010000008fc2f53c000000000000803e000000000000000000000000000000c20000004200000000000000000000000000000000
+    m_UnityObjects: []
+    m_Version: 3.4
