@@ -30,6 +30,74 @@ public class PlayerSpawner : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Destroy the current local player and spawn a new one at the same
+    /// position using the currently-selected character. Inventory carries
+    /// over via LoadoutApplier's snapshot on destroy.
+    /// </summary>
+    public static void RespawnLocalPlayer()
+    {
+        if (!PhotonNetwork.IsConnected)
+        {
+            Debug.LogWarning("RespawnLocalPlayer: not connected to Photon, skipping.");
+            return;
+        }
+
+        PhotonView[] views = FindObjectsOfType<PhotonView>();
+        GameObject localPlayer = null;
+        foreach (PhotonView view in views)
+        {
+            if (view.IsMine && view.GetComponent<Opsive.UltimateCharacterController.Character.UltimateCharacterLocomotion>() != null)
+            {
+                localPlayer = view.gameObject;
+                break;
+            }
+        }
+
+        if (localPlayer == null)
+        {
+            Debug.LogWarning("RespawnLocalPlayer: no local player found.");
+            return;
+        }
+
+        Vector3 pos = localPlayer.transform.position;
+        Quaternion rot = localPlayer.transform.rotation;
+
+        var lm = Klyra.Loadout.LoadoutManager.Instance;
+        string prefabName = lm != null && !string.IsNullOrEmpty(lm.CurrentCharacter)
+            ? lm.CurrentCharacter
+            : null;
+        if (string.IsNullOrEmpty(prefabName))
+        {
+            // Fall back to the existing spawner's default if present.
+            var fallback = FindObjectOfType<PlayerSpawner>();
+            if (fallback != null) prefabName = fallback.playerPrefabName;
+        }
+        if (string.IsNullOrEmpty(prefabName))
+        {
+            Debug.LogError("RespawnLocalPlayer: no prefab name available (LoadoutManager.CurrentCharacter empty and no PlayerSpawner fallback).");
+            return;
+        }
+
+        // Detach the camera from the old character before destroying it —
+        // otherwise ObjectFader / look source components keep dangling
+        // Transform refs and throw on the next Update.
+        var camCtrl = FindObjectOfType<Opsive.UltimateCharacterController.Camera.CameraController>();
+        if (camCtrl != null) camCtrl.Character = null;
+
+        PhotonNetwork.Destroy(localPlayer);
+
+        var spawned = PhotonNetwork.Instantiate(prefabName, pos, rot);
+        if (spawned == null)
+        {
+            Debug.LogError($"RespawnLocalPlayer: PhotonNetwork.Instantiate('{prefabName}') returned null. Is the prefab in Resources/?");
+            return;
+        }
+
+        // Reattach camera to the new character so look / fade / IK rebind.
+        if (camCtrl != null) camCtrl.Character = spawned;
+    }
+
     bool HasSpawnedPlayer()
     {
         // Check if we already spawned a player (look for PhotonView owned by us)
@@ -49,10 +117,18 @@ public class PlayerSpawner : MonoBehaviour
         Vector3 spawnPosition = GetSpawnPosition();
         Quaternion spawnRotation = GetSpawnRotation();
 
-        Debug.Log($"Spawning player at {spawnPosition}");
+        // The player's saved character pick on the LoadoutManager takes
+        // priority over the inspector's default. Falls back if unset.
+        string prefabName = playerPrefabName;
+        var lm = Klyra.Loadout.LoadoutManager.Instance;
+        if (lm != null && !string.IsNullOrEmpty(lm.CurrentCharacter))
+        {
+            prefabName = lm.CurrentCharacter;
+        }
 
-        // Spawn the player using Photon
-        GameObject player = PhotonNetwork.Instantiate(playerPrefabName, spawnPosition, spawnRotation);
+        Debug.Log($"Spawning player '{prefabName}' at {spawnPosition}");
+
+        GameObject player = PhotonNetwork.Instantiate(prefabName, spawnPosition, spawnRotation);
 
         if (player != null)
         {
@@ -60,11 +136,11 @@ public class PlayerSpawner : MonoBehaviour
         }
         else
         {
-            Debug.LogError($"Failed to spawn player! Make sure '{playerPrefabName}' exists in Resources folder.");
+            Debug.LogError($"Failed to spawn player! Make sure '{prefabName}' exists in Resources folder.");
         }
     }
 
-    Vector3 GetSpawnPosition()
+    public Vector3 GetSpawnPosition()
     {
         if (spawnPoints != null && spawnPoints.Length > 0)
         {
@@ -84,7 +160,7 @@ public class PlayerSpawner : MonoBehaviour
         return transform.position;
     }
 
-    Quaternion GetSpawnRotation()
+    public Quaternion GetSpawnRotation()
     {
         if (spawnPoints != null && spawnPoints.Length > 0)
         {

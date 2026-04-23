@@ -412,7 +412,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: de0f6fd22678e7848bdbd280d01f33c3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AutoConnectPUN
-  gameplaySceneName: DoorScene
+  gameplaySceneName: Station
   maxPlayersPerRoom: 4
   roomName: BreachRoom
   showDebugLogs: 1

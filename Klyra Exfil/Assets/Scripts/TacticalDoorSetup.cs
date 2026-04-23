@@ -43,8 +43,15 @@ public class TacticalDoorSetup : MonoBehaviour
     [Tooltip("Breaching charge prefab (leave empty to use default)")]
     public GameObject breachingChargePrefab;
 
-    [Tooltip("How many charges does player have?")]
+    [Tooltip("UCC Item Definition for a breach charge. When set, placement pulls from the player's inventory (loadout-driven).")]
+    public Opsive.Shared.Inventory.ItemDefinitionBase breachChargeItem;
+
+    [Tooltip("Legacy per-door charge count. Only used when Breach Charge Item is unset.")]
     public int breachChargesAvailable = 3;
+
+    [Header("Optional Features")]
+    [Tooltip("Enable snake cam (slide a cable camera under the door).")]
+    public bool enableSnakeCam = true;
 
     [Header("Advanced")]
     [Tooltip("Auto-detect door mesh and colliders?")]
@@ -143,7 +150,15 @@ public class TacticalDoorSetup : MonoBehaviour
         }
 
         interactable.breachingChargePrefab = breachingChargePrefab;
+        interactable.breachChargeItem = breachChargeItem;
         interactable.breachingChargesAvailable = breachChargesAvailable;
+
+        // Optional snake cam.
+        if (enableSnakeCam && GetComponent<DoorSnakeCam>() == null)
+        {
+            gameObject.AddComponent<DoorSnakeCam>();
+            Debug.Log("Added DoorSnakeCam component");
+        }
 
         // 5. Add PhotonView for networking
         PhotonView pv = GetComponent<PhotonView>();

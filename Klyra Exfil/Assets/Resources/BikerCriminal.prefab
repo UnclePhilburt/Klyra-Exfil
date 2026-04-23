@@ -1733,7 +1733,7 @@ MonoBehaviour:
   hearingRange: 15
   obstacleMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 1
   alertIncreaseRate: 2
   alertDecreaseRate: 0.5
   combatSpeed: 3
@@ -1743,8 +1743,12 @@ MonoBehaviour:
   complianceChance: 0.3
   complianceDuration: 5
   voiceCommandRange: 10
-  flashbangStunDuration: 5
+  flashbangStunDuration: 8
+  flashbangStunClip: {fileID: -203655887218126122, guid: e5ce02013fdf8465596e6d9a87013d08, type: 3}
+  flashbangWobbleSpeed: 180
+  flashbangWobbleAmplitude: 90
   eyePosition: {fileID: 0}
+  debugDetection: 1
 --- !u!1 &7510688449276615951
 GameObject:
   m_ObjectHideFlags: 0

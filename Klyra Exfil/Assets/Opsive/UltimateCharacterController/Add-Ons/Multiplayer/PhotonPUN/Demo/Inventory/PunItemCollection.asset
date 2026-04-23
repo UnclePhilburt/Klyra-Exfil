@@ -65,6 +65,9 @@ MonoBehaviour:
   - {fileID: 4021143365342896098}
   - {fileID: 4906038157856389806}
   - {fileID: -5310187782341302983}
+  - {fileID: 3539424784704282294}
+  - {fileID: 8192739638633277009}
+  - {fileID: 8646973414647546444}
 --- !u!114 &114038489858704770
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -564,6 +567,23 @@ MonoBehaviour:
   m_Prefabs:
   - {fileID: 4578165332327779886, guid: 38e042536cb5bba4dba0dc269081a1dc, type: 3}
   - {fileID: 1645335493191911543, guid: 00900986bf6249143a13a0e5454b4542, type: 3}
+--- !u!114 &3539424784704282294
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e74c32144565264eb86dc7514aca7f7, type: 3}
+  m_Name: M4A1
+  m_EditorClassIdentifier: Opsive.UltimateCharacterController::Opsive.UltimateCharacterController.Inventory.ItemType
+  m_ID: 28
+  m_CategoryIDs: bf70bfd8fc68d90d
+  m_Capacity: 2147483647
+  m_Prefabs:
+  - {fileID: 4816223025249661939, guid: 698c1fbf11b9e4a9ea786bd5e851bf54, type: 3}
 --- !u!114 &4021143365342896098
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -597,3 +617,36 @@ MonoBehaviour:
   m_CategoryIDs: bf70bfd8
   m_Capacity: 2147483647
   m_Prefabs: []
+--- !u!114 &8192739638633277009
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e74c32144565264eb86dc7514aca7f7, type: 3}
+  m_Name: 5.56 Ammo
+  m_EditorClassIdentifier: Opsive.UltimateCharacterController::Opsive.UltimateCharacterController.Inventory.ItemType
+  m_ID: 29
+  m_CategoryIDs: bf70bfd8
+  m_Capacity: 2147483647
+  m_Prefabs: []
+--- !u!114 &8646973414647546444
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e74c32144565264eb86dc7514aca7f7, type: 3}
+  m_Name: BreachCharge
+  m_EditorClassIdentifier: Opsive.UltimateCharacterController::Opsive.UltimateCharacterController.Inventory.ItemType
+  m_ID: 30
+  m_CategoryIDs: bf70bfd8
+  m_Capacity: 2147483647
+  m_Prefabs:
+  - {fileID: 1738598003568112, guid: c129097ff8e354e43be1e5ef3f514877, type: 3}

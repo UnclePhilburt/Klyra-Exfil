@@ -16,10 +16,10 @@ public class FlashbangGrenade : MonoBehaviourPun
     public float effectRadius = 10f;
 
     [Tooltip("Maximum flash duration for players directly looking at it")]
-    public float maxFlashDuration = 5f;
+    public float maxFlashDuration = 8f;
 
     [Tooltip("Minimum flash duration for players at edge of radius")]
-    public float minFlashDuration = 1f;
+    public float minFlashDuration = 3f;
 
     [Tooltip("Maximum deafen duration")]
     public float maxDeafenDuration = 4f;
@@ -177,54 +177,47 @@ public class FlashbangGrenade : MonoBehaviourPun
     /// </summary>
     void FlashNearbyPlayers()
     {
-        // Find all objects with FlashbangEffect component in radius
         Collider[] colliders = Physics.OverlapSphere(transform.position, effectRadius);
+
+        // Dedupe: characters have many colliders (ragdoll bones) and we only
+        // want to flash each one once.
+        var flashedPlayers = new System.Collections.Generic.HashSet<FlashbangEffect>();
+        var flashedAI = new System.Collections.Generic.HashSet<TacticalAI>();
 
         foreach (Collider col in colliders)
         {
-            // Check if this is a player with FlashbangEffect component
-            FlashbangEffect flashEffect = col.GetComponentInChildren<FlashbangEffect>();
-            if (flashEffect == null)
-            {
-                flashEffect = col.GetComponentInParent<FlashbangEffect>();
-            }
+            // Walk the hierarchy up and down so bone colliders still resolve
+            // to the root component. Same pattern for both player and AI.
+            FlashbangEffect flashEffect = col.GetComponentInParent<FlashbangEffect>();
+            if (flashEffect == null) flashEffect = col.GetComponentInChildren<FlashbangEffect>();
 
-            if (flashEffect != null)
+            TacticalAI aiEnemy = col.GetComponentInParent<TacticalAI>();
+            if (aiEnemy == null) aiEnemy = col.GetComponentInChildren<TacticalAI>();
+
+            if (flashEffect != null && flashedPlayers.Add(flashEffect))
             {
-                // Check line of sight (walls block flashbang)
-                Vector3 directionToTarget = col.transform.position - transform.position;
-                if (Physics.Raycast(transform.position, directionToTarget.normalized, directionToTarget.magnitude, obstacleMask))
+                Vector3 toTarget = flashEffect.transform.position - transform.position;
+                if (Physics.Raycast(transform.position, toTarget.normalized, toTarget.magnitude, obstacleMask))
                 {
-                    Debug.Log($"Flashbang blocked by wall for {col.name}");
-                    continue; // Wall blocks the flash
+                    Debug.Log($"Flashbang blocked by wall for {flashEffect.name}");
                 }
-
-                // Calculate flash intensity based on distance
-                float distance = Vector3.Distance(transform.position, col.transform.position);
-                float normalizedDistance = Mathf.Clamp01(distance / effectRadius);
-
-                // Closer = stronger flash
-                float flashDuration = Mathf.Lerp(maxFlashDuration, minFlashDuration, normalizedDistance);
-                float deafenDuration = Mathf.Lerp(maxDeafenDuration, maxDeafenDuration * 0.5f, normalizedDistance);
-
-                Debug.Log($"Flashing {col.name} at distance {distance:F1}m - Duration: {flashDuration:F1}s");
-
-                // Apply flash effect
-                flashEffect.Flash(flashDuration, deafenDuration);
+                else
+                {
+                    float distance = toTarget.magnitude;
+                    float normalizedDistance = Mathf.Clamp01(distance / effectRadius);
+                    float flashDuration = Mathf.Lerp(maxFlashDuration, minFlashDuration, normalizedDistance);
+                    float deafenDuration = Mathf.Lerp(maxDeafenDuration, maxDeafenDuration * 0.5f, normalizedDistance);
+                    Debug.Log($"Flashing {flashEffect.name} at distance {distance:F1}m - Duration: {flashDuration:F1}s");
+                    flashEffect.Flash(flashDuration, deafenDuration);
+                }
             }
 
-            // Check if this is an AI enemy
-            TacticalAI aiEnemy = col.GetComponent<TacticalAI>();
-            if (aiEnemy != null)
+            if (aiEnemy != null && flashedAI.Add(aiEnemy))
             {
-                // Calculate flash intensity based on distance
-                float distance = Vector3.Distance(transform.position, col.transform.position);
+                float distance = Vector3.Distance(transform.position, aiEnemy.transform.position);
                 float normalizedDistance = Mathf.Clamp01(distance / effectRadius);
                 float flashDuration = Mathf.Lerp(maxFlashDuration, minFlashDuration, normalizedDistance);
-
-                Debug.Log($"Flashbanging AI {col.name} at distance {distance:F1}m - Duration: {flashDuration:F1}s");
-
-                // Apply flashbang to AI
+                Debug.Log($"Flashbanging AI {aiEnemy.name} at distance {distance:F1}m - Duration: {flashDuration:F1}s");
                 aiEnemy.OnFlashbanged(flashDuration);
             }
         }

@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Animations;
+using UnityEngine.Playables;
 using Photon.Pun;
 using System.Collections;
 using System.Collections.Generic;
@@ -61,14 +63,33 @@ public class TacticalAI : MonoBehaviourPun
     [Header("Flashbang Response")]
     [Tooltip("Duration of flashbang stun")]
     public float flashbangStunDuration = 5f;
+    [Tooltip("Mixamo / humanoid clip to play while stunned. Leave empty to use the wobble-only fallback.")]
+    public AnimationClip flashbangStunClip;
+    [Tooltip("How violently the AI wobbles their aim while stunned. Ignored when a stun clip is assigned.")]
+    public float flashbangWobbleSpeed = 180f;
+    [Tooltip("How far the AI's aim can swing off-center while stunned. Ignored when a stun clip is assigned.")]
+    public float flashbangWobbleAmplitude = 90f;
 
     [Header("References")]
     public Transform eyePosition; // For line of sight checks
+
+    [Header("Debug")]
+    [Tooltip("Log a detection summary once per second.")]
+    public bool debugDetection = false;
+    private float debugLogTimer = 0f;
 
     // Private state
     private NavMeshAgent navAgent;
     private Opsive.UltimateCharacterController.Character.UltimateCharacterLocomotion characterLocomotion;
     private Opsive.UltimateCharacterController.Character.Abilities.Items.Use useAbility;
+    private Opsive.UltimateCharacterController.Character.Abilities.Items.Aim aimAbility;
+    private Opsive.UltimateCharacterController.Character.Abilities.Items.Reload reloadAbility;
+    private Opsive.UltimateCharacterController.Character.Abilities.AI.PathfindingMovement pathfindingMovement;
+    private int dryFireCount = 0;
+
+    private Animator animator;
+    private PlayableGraph stunGraph;
+    private AnimationClipPlayable stunClipPlayable;
     private Transform currentTarget;
     private int currentWaypointIndex = 0;
     private float waypointTimer = 0f;
@@ -92,10 +113,14 @@ public class TacticalAI : MonoBehaviourPun
         // Get components
         navAgent = GetComponent<NavMeshAgent>();
         characterLocomotion = GetComponent<Opsive.UltimateCharacterController.Character.UltimateCharacterLocomotion>();
+        animator = GetComponentInChildren<Animator>();
 
         if (characterLocomotion != null)
         {
             useAbility = characterLocomotion.GetAbility<Opsive.UltimateCharacterController.Character.Abilities.Items.Use>();
+            aimAbility = characterLocomotion.GetAbility<Opsive.UltimateCharacterController.Character.Abilities.Items.Aim>();
+            reloadAbility = characterLocomotion.GetAbility<Opsive.UltimateCharacterController.Character.Abilities.Items.Reload>();
+            pathfindingMovement = characterLocomotion.GetAbility<Opsive.UltimateCharacterController.Character.Abilities.AI.PathfindingMovement>();
         }
 
         // Setup eye position if not set
@@ -130,6 +155,7 @@ public class TacticalAI : MonoBehaviourPun
     {
         // Unsubscribe from death event
         Opsive.Shared.Events.EventHandler.UnregisterEvent<Vector3, Vector3, GameObject>(gameObject, "OnDeath", OnAIDeath);
+        if (stunGraph.IsValid()) stunGraph.Destroy();
     }
 
     void OnAIDeath(Vector3 position, Vector3 force, GameObject attacker)
@@ -264,8 +290,9 @@ public class TacticalAI : MonoBehaviourPun
         }
         else
         {
-            // Good distance, stop moving
-            navAgent.ResetPath();
+            // Good distance, stop moving — setting destination to our current
+            // position makes the pathfinding ability arrive immediately.
+            SetDestination(transform.position);
         }
 
         // Face target
@@ -288,8 +315,27 @@ public class TacticalAI : MonoBehaviourPun
 
     void UpdateFlashbanged()
     {
-        // Stumble around blindly
-        navAgent.ResetPath();
+        // Keep them rooted.
+        SetDestination(transform.position);
+
+        // Loop the stun clip manually if one is assigned.
+        if (stunGraph.IsValid() && stunClipPlayable.IsValid() && flashbangStunClip != null)
+        {
+            double t = stunClipPlayable.GetTime();
+            if (t >= flashbangStunClip.length)
+            {
+                stunClipPlayable.SetTime(t % flashbangStunClip.length);
+            }
+            return;
+        }
+
+        // Fallback: no clip assigned — wobble their aim so they look blinded.
+        if (characterLocomotion != null)
+        {
+            float wobbleYaw = Mathf.Sin(Time.time * flashbangWobbleSpeed * Mathf.Deg2Rad) * flashbangWobbleAmplitude;
+            Quaternion wobble = Quaternion.AngleAxis(wobbleYaw, Vector3.up) * transform.rotation;
+            characterLocomotion.SetRotation(wobble, false);
+        }
     }
 
     #endregion
@@ -298,24 +344,36 @@ public class TacticalAI : MonoBehaviourPun
 
     void CheckForThreats()
     {
-        // Find all players in range
-        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+        var players = PlayerTarget.All;
 
-        foreach (GameObject playerObj in players)
+        bool shouldLog = debugDetection && (Time.time - debugLogTimer) >= 1f;
+        if (shouldLog)
         {
-            if (playerObj == gameObject) continue; // Skip self
+            debugLogTimer = Time.time;
+            Debug.Log($"[AI:{name}] state={currentState} playersFound={players.Count} eyeFwd={eyePosition.forward} aiFwd={transform.forward}", this);
+        }
 
-            float distance = Vector3.Distance(transform.position, playerObj.transform.position);
+        for (int i = 0; i < players.Count; i++)
+        {
+            var player = players[i];
+            if (player == null || player.gameObject == gameObject) continue;
 
-            // Check sight
-            if (distance <= sightRange)
+            Transform aim = player.AimPoint;
+            float distance = Vector3.Distance(transform.position, aim.position);
+
+            if (shouldLog)
             {
-                if (CanSeeTarget(playerObj.transform))
-                {
-                    OnPlayerDetected(playerObj.transform);
-                    lastKnownPlayerPosition = playerObj.transform.position;
-                    hasLastKnownPosition = true;
-                }
+                Vector3 dir = (aim.position - eyePosition.position).normalized;
+                float angle = Vector3.Angle(eyePosition.forward, dir);
+                bool losBlocked = Physics.Raycast(eyePosition.position, dir, distance, obstacleMask);
+                Debug.Log($"[AI:{name}]  -> player={player.name} dist={distance:F1}/{sightRange} angle={angle:F1}/{fieldOfView/2f} losBlocked={losBlocked} obstacleMask={obstacleMask.value}", this);
+            }
+
+            if (distance <= sightRange && CanSeeTarget(aim))
+            {
+                OnPlayerDetected(aim);
+                lastKnownPlayerPosition = aim.position;
+                hasLastKnownPosition = true;
             }
         }
     }
@@ -371,39 +429,71 @@ public class TacticalAI : MonoBehaviourPun
     void TryShootTarget()
     {
         if (currentTarget == null) return;
-        if (characterLocomotion == null) return;
+        if (characterLocomotion == null || useAbility == null) return;
 
         // Check if can see target
-        if (!CanSeeTarget(currentTarget))
+        if (!CanSeeTarget(currentTarget)) return;
+
+        // Don't try to fire while reloading.
+        if (reloadAbility != null && reloadAbility.IsActive) return;
+
+        // Keep the weapon aimed so firing lines up correctly.
+        if (aimAbility != null && !aimAbility.IsActive)
         {
-            return;
+            characterLocomotion.TryStartAbility(aimAbility);
         }
 
-        // Apply accuracy
-        if (Random.value > accuracy)
+        // Apply accuracy (skip *this* pull of the trigger, not the whole cycle).
+        if (Random.value > accuracy) return;
+
+        // Use is a press/release ability. Release any prior press so the next
+        // Start is actually allowed to begin — otherwise IsActive stays true
+        // forever after the first shot and the weapon silently stops firing.
+        if (useAbility.IsActive)
         {
-            Debug.Log($"{gameObject.name}: Shot missed (accuracy)");
-            return;
+            characterLocomotion.TryStopAbility(useAbility);
         }
 
-        // Try to use weapon (fire) - Use the CharacterLocomotion to start the Use ability
-        if (useAbility != null && !useAbility.IsActive)
+        bool started = characterLocomotion.TryStartAbility(useAbility);
+        if (started)
         {
-            characterLocomotion.TryStartAbility(useAbility);
+            dryFireCount = 0;
+            Debug.Log($"{gameObject.name}: Firing at target!");
         }
-
-        Debug.Log($"{gameObject.name}: Firing at target!");
+        else
+        {
+            // Start refused — most commonly an empty mag. After a couple failed
+            // attempts, trigger a reload.
+            dryFireCount++;
+            if (dryFireCount >= 2 && reloadAbility != null && !reloadAbility.IsActive)
+            {
+                if (characterLocomotion.TryStartAbility(reloadAbility))
+                {
+                    Debug.Log($"{gameObject.name}: Reloading");
+                    dryFireCount = 0;
+                }
+            }
+        }
     }
 
     void LookAtTarget(Vector3 position)
     {
-        Vector3 direction = (position - transform.position).normalized;
-        direction.y = 0; // Keep on horizontal plane
+        Vector3 direction = position - transform.position;
+        direction.y = 0;
+        if (direction.sqrMagnitude < 0.0001f) return;
 
-        if (direction != Vector3.zero)
+        Quaternion target = Quaternion.LookRotation(direction.normalized);
+
+        // UCC's locomotion overwrites transform.rotation each frame, so we have
+        // to go through SetRotation. Lerp toward the target for a smooth turn.
+        if (characterLocomotion != null)
         {
-            Quaternion lookRotation = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, Time.deltaTime * 5f);
+            Quaternion smoothed = Quaternion.Slerp(characterLocomotion.Rotation, target, Time.deltaTime * 5f);
+            characterLocomotion.SetRotation(smoothed, false);
+        }
+        else
+        {
+            transform.rotation = Quaternion.Slerp(transform.rotation, target, Time.deltaTime * 5f);
         }
     }
 
@@ -467,18 +557,63 @@ public class TacticalAI : MonoBehaviourPun
 
     IEnumerator FlashbangStun(float duration)
     {
-        AIState previousState = currentState;
         TransitionToState(AIState.Flashbanged);
         isFlashbanged = true;
 
-        // Drop target
+        // Drop target and stop the character dead in its tracks so they're not
+        // still firing or walking toward us while blinded.
         currentTarget = null;
+        if (characterLocomotion != null)
+        {
+            if (useAbility != null && useAbility.IsActive) characterLocomotion.TryStopAbility(useAbility);
+            if (aimAbility != null && aimAbility.IsActive) characterLocomotion.TryStopAbility(aimAbility);
+        }
+        SetDestination(transform.position);
+
+        StartStunAnimation();
 
         yield return new WaitForSeconds(duration);
+
+        StopStunAnimation();
+
+        // Clear any stuck ability state from before/during the stun.
+        if (characterLocomotion != null && reloadAbility != null && reloadAbility.IsActive)
+        {
+            characterLocomotion.TryStopAbility(reloadAbility, true);
+        }
+        dryFireCount = 0;
+        fireTimer = 0f;
 
         isFlashbanged = false;
         TransitionToState(AIState.Patrol); // Reset to patrol after flashbang
         Debug.Log($"{gameObject.name}: Recovered from flashbang");
+    }
+
+    void StartStunAnimation()
+    {
+        if (flashbangStunClip == null || animator == null) return;
+        if (stunGraph.IsValid()) return;
+
+        stunGraph = PlayableGraph.Create($"FlashbangStun_{name}");
+        stunGraph.SetTimeUpdateMode(DirectorUpdateMode.GameTime);
+
+        stunClipPlayable = AnimationClipPlayable.Create(stunGraph, flashbangStunClip);
+        stunClipPlayable.SetApplyFootIK(true);
+
+        var output = AnimationPlayableOutput.Create(stunGraph, "Animation", animator);
+        output.SetSourcePlayable(stunClipPlayable);
+
+        stunGraph.Play();
+    }
+
+    void StopStunAnimation()
+    {
+        if (!stunGraph.IsValid()) return;
+        stunGraph.Destroy();
+        // Do NOT call animator.Rebind() — that zeros out UCC's animator
+        // parameters (Slot0ItemStateIndex etc.) which makes UCC believe the
+        // item was unequipped, and Use/Aim silently refuse to fire afterwards.
+        // Destroying the graph alone hands output back to the controller.
     }
 
     #endregion
@@ -496,6 +631,18 @@ public class TacticalAI : MonoBehaviourPun
         {
             case AIState.Patrol:
                 waypointTimer = 0f;
+                break;
+            case AIState.Combat:
+                // Lower the weapon when leaving combat.
+                if (characterLocomotion != null && aimAbility != null && aimAbility.IsActive)
+                {
+                    characterLocomotion.TryStopAbility(aimAbility);
+                }
+                if (characterLocomotion != null && useAbility != null && useAbility.IsActive)
+                {
+                    characterLocomotion.TryStopAbility(useAbility);
+                }
+                dryFireCount = 0;
                 break;
         }
 
@@ -520,6 +667,16 @@ public class TacticalAI : MonoBehaviourPun
 
     void SetDestination(Vector3 destination)
     {
+        // Go through UCC's pathfinding ability so it can bridge the NavMeshAgent
+        // path into the character's locomotion. Calling navAgent.SetDestination
+        // directly bypasses that bridge and the character doesn't actually follow
+        // the path — it ends up walking straight at the target through walls.
+        if (pathfindingMovement != null)
+        {
+            pathfindingMovement.SetDestination(destination);
+            return;
+        }
+
         if (navAgent != null && navAgent.isOnNavMesh)
         {
             navAgent.SetDestination(destination);

@@ -220,6 +220,9 @@ GameObject:
   - component: {fileID: 5082189672040534835}
   - component: {fileID: 86296221362069714}
   - component: {fileID: 4163449217725705217}
+  - component: {fileID: 4520847475889838585}
+  - component: {fileID: -6281506714611898920}
+  - component: {fileID: -1629270935594120729}
   m_Layer: 31
   m_Name: Sheriff
   m_TagString: Player
@@ -1737,6 +1740,56 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 133ee19fb76303841857ab404ffd240e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Opsive.UltimateCharacterController.AddOns.Multiplayer.PhotonPUN::Opsive.UltimateCharacterController.AddOns.Multiplayer.PhotonPun.Traits.PunRespawnerMonitor
+--- !u!114 &4520847475889838585
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5233336123450083611}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd23e724aa8e2e741afb465e399af4d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VoiceLineSystem
+  voiceKey: v
+  holdTime: 0.25
+  audioRange: 20
+  voiceLines:
+  - name: Get on the ground!
+    audioClip: {fileID: 8300000, guid: da986fbd39b06f04c88ee508e32efaff, type: 3}
+    subtitleText: Get on the fucking ground!
+    subtitleDuration: 2
+  backgroundColor: {r: 0.05, g: 0.05, b: 0.08, a: 0.95}
+  optionNormalColor: {r: 0.15, g: 0.15, b: 0.2, a: 0.9}
+  optionHoverColor: {r: 0.3, g: 0.6, b: 1, a: 1}
+  textColor: {r: 1, g: 1, b: 1, a: 1}
+--- !u!114 &-6281506714611898920
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5233336123450083611}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9c2c54c84b5845a1b6c375edd3ae9f9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerTarget
+  aimPoint: {fileID: 2542616543579458546}
+--- !u!114 &-1629270935594120729
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5233336123450083611}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26107e88feb8c4c17bd4772982c7ab97, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Klyra.Loadout.LoadoutApplier
+  clearExistingLoadout: 1
 --- !u!1 &5810218603029194986
 GameObject:
   m_ObjectHideFlags: 0
@@ -2540,6 +2593,11 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!4 &2542616543579458546 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7474332868655182420, guid: 93eb0ea52dcfd3e4b8f16a3faaef4efa, type: 3}
+  m_PrefabInstance: {fileID: 4968343825771805094}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &2637900964193603881 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6946994366137870479, guid: 93eb0ea52dcfd3e4b8f16a3faaef4efa, type: 3}

@@ -24,7 +24,6 @@ public class DoorRadialMenu : MonoBehaviour
     private int selectedOption = -1;
     private Door targetDoor;
     private DoorInteractable doorInteractable;
-    private DoorSnakeCam doorSnakeCam;
     private bool hasExecuted = false;
 
     private class MenuOption
@@ -42,15 +41,17 @@ public class DoorRadialMenu : MonoBehaviour
     {
         targetDoor = door;
         doorInteractable = interactable;
-        doorSnakeCam = door?.GetComponent<DoorSnakeCam>();
         hasExecuted = false;
         holdTimer = 0f;
         isMenuOpen = false;
 
+        // Snake cam is resolved lazily each click so it still works when
+        // TacticalDoorSetup adds the DoorSnakeCam component AFTER SetDoor
+        // has already run (Unity doesn't guarantee Start ordering).
         menuOptions = new MenuOption[]
         {
             new MenuOption { name = "OPEN", angle = 45f, action = () => targetDoor?.Toggle() },
-            new MenuOption { name = "SNAKE CAM", angle = 135f, action = () => doorSnakeCam?.ToggleSnakeCam() },
+            new MenuOption { name = "SNAKE CAM", angle = 135f, action = () => targetDoor?.GetComponent<DoorSnakeCam>()?.ToggleSnakeCam() },
             new MenuOption { name = "BREACH", angle = 225f, action = () => targetDoor?.Breach() },
             new MenuOption { name = "EXPLOSIVE", angle = 315f, action = () => doorInteractable?.PlaceExplosiveCharge() }
         };

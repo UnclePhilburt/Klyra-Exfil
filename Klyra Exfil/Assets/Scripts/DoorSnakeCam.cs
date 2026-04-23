@@ -52,6 +52,8 @@ public class DoorSnakeCam : MonoBehaviour
     private Transform player;
     private Camera playerCamera;
     private bool isUsingSnakeCam = false;
+    public bool IsUsingSnakeCam => isUsingSnakeCam;
+    public static bool AnyActive { get; private set; }
     private AudioSource audioSource;
     private Vector3 snakeCamPosition;
     private float rotationX = 0f;
@@ -310,6 +312,7 @@ public class DoorSnakeCam : MonoBehaviour
     void ActivateSnakeCam()
     {
         isUsingSnakeCam = true;
+        AnyActive = true;
 
         // Reset rotation - face AWAY from door (180 degrees from door's forward)
         rotationX = 180f; // Turn around
@@ -363,6 +366,7 @@ public class DoorSnakeCam : MonoBehaviour
     void DeactivateSnakeCam()
     {
         isUsingSnakeCam = false;
+        AnyActive = false;
 
         // Re-enable player camera
         if (player != null)

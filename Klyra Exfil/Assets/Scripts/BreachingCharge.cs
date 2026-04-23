@@ -1,6 +1,7 @@
 using UnityEngine;
 using Photon.Pun;
 using System.Collections;
+using System.Collections.Generic;
 
 /// <summary>
 /// Breaching charge that can be placed on doors and detonated.
@@ -23,6 +24,16 @@ public class BreachingCharge : MonoBehaviourPun
 
     [Tooltip("Camera shake intensity")]
     public float shakeIntensity = 0.5f;
+
+    [Header("Blast Damage")]
+    [Tooltip("Enemies within this radius of the charge die instantly.")]
+    public float lethalRadius = 2.5f;
+    [Tooltip("Enemies within this radius (but outside the lethal zone) get concussed / flashbanged.")]
+    public float concussRadius = 8f;
+    [Tooltip("Max stun duration for an enemy right at the edge of the lethal zone.")]
+    public float maxConcussDuration = 6f;
+    [Tooltip("Min stun duration for an enemy at the edge of the concuss zone.")]
+    public float minConcussDuration = 2f;
 
     [Header("Visual Effects")]
     [Tooltip("Particle effect to spawn on explosion (optional)")]
@@ -164,6 +175,8 @@ public class BreachingCharge : MonoBehaviourPun
         // Camera shake (local effect)
         CameraShake.Shake(shakeDuration, shakeIntensity);
 
+        ApplyBlastEffects();
+
         // Explosion sound
         if (explosionSound != null && audioSource != null)
         {
@@ -198,5 +211,45 @@ public class BreachingCharge : MonoBehaviourPun
         explosionLight.enabled = true;
         yield return new WaitForSeconds(flashDuration);
         explosionLight.enabled = false;
+    }
+
+    /// <summary>
+    /// Kills enemies inside the lethal zone and stuns any within the concuss
+    /// zone (distance-scaled duration). Runs on every client that replays the
+    /// detonation — each client's Health/TacticalAI handles the rest.
+    /// </summary>
+    void ApplyBlastEffects()
+    {
+        Vector3 origin = transform.position;
+        float scanRadius = Mathf.Max(lethalRadius, concussRadius);
+        var hits = Physics.OverlapSphere(origin, scanRadius);
+
+        var hitAI = new HashSet<TacticalAI>();
+        for (int i = 0; i < hits.Length; i++)
+        {
+            var ai = hits[i].GetComponentInParent<TacticalAI>();
+            if (ai == null) ai = hits[i].GetComponentInChildren<TacticalAI>();
+            if (ai == null || !hitAI.Add(ai)) continue;
+
+            float distance = Vector3.Distance(origin, ai.transform.position);
+
+            if (distance <= lethalRadius)
+            {
+                var health = ai.GetComponent<Opsive.UltimateCharacterController.Traits.Health>();
+                if (health != null)
+                {
+                    Vector3 dir = (ai.transform.position - origin).normalized;
+                    health.Damage(9999f, ai.transform.position, dir, 500f, gameObject);
+                }
+                continue;
+            }
+
+            if (distance <= concussRadius)
+            {
+                float t = Mathf.InverseLerp(concussRadius, lethalRadius, distance);
+                float duration = Mathf.Lerp(minConcussDuration, maxConcussDuration, t);
+                ai.OnFlashbanged(duration);
+            }
+        }
     }
 }

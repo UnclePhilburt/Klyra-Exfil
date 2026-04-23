@@ -1,7 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Opsive.UltimateCharacterController.Character;
+using Opsive.UltimateCharacterController.Inventory;
 using Opsive.Shared.Input;
+using Opsive.Shared.Inventory;
 using Photon.Pun;
 
 /// <summary>
@@ -14,20 +16,17 @@ public class DoorInteractable : MonoBehaviour
     private Door door;
 
     [Header("Interaction Settings")]
-    [Tooltip("Button name from UCC Input (default is 'Interact')")]
+    [Tooltip("Button name from UCC Input (default is 'Interact'). Opens the radial menu; all door actions go through it.")]
     public string interactButton = "Interact";
-
-    [Tooltip("Key to press to breach door (kick)")]
-    public Key breachKey = Key.E;
-
-    [Tooltip("Key to press to place breaching charge")]
-    public Key placeChargeKey = Key.Q;
 
     [Header("Breaching Charge")]
     [Tooltip("Breaching charge prefab to spawn")]
     public GameObject breachingChargePrefab;
 
-    [Tooltip("Player has breaching charges available?")]
+    [Tooltip("UCC Item Definition for a breach charge. When set, placement pulls from the player's inventory (loadout-driven). Leave null to fall back to the legacy breachingChargesAvailable counter.")]
+    public ItemDefinitionBase breachChargeItem;
+
+    [Tooltip("Legacy fallback count — used only when Breach Charge Item is unset.")]
     public int breachingChargesAvailable = 3;
 
     [Tooltip("How close player needs to be to interact")]
@@ -156,8 +155,77 @@ public class DoorInteractable : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Whether the nearby player has a breach charge they can place.
+    /// Uses the UCC inventory when BreachChargeItem is assigned, else the
+    /// legacy breachingChargesAvailable counter.
+    /// </summary>
+    public bool HasBreachChargeAvailable()
+    {
+        if (breachChargeItem != null && nearbyPlayer != null)
+        {
+            // UCC inventory can sit on the root or a child — search both.
+            var inventory = nearbyPlayer.GetComponent<InventoryBase>();
+            if (inventory == null) inventory = nearbyPlayer.GetComponentInChildren<InventoryBase>();
+            if (inventory == null) inventory = nearbyPlayer.GetComponentInParent<InventoryBase>();
+
+            if (inventory == null)
+            {
+                Debug.LogWarning($"[DoorInteractable] No InventoryBase found on '{nearbyPlayer.name}' — falling back to legacy counter.");
+            }
+            else
+            {
+                int amount = inventory.GetItemIdentifierAmount(breachChargeItem.CreateItemIdentifier());
+                Debug.Log($"[DoorInteractable] Looking for '{breachChargeItem.name}' (id={breachChargeItem.GetInstanceID()}). Inventory has {amount}.");
+                if (amount == 0)
+                {
+                    // Dump everything in the inventory so we can see what's actually there.
+                    var allIds = inventory.GetAllItemIdentifiers();
+                    var sb = new System.Text.StringBuilder("[DoorInteractable] Inventory contents:");
+                    foreach (var id in allIds)
+                    {
+                        sb.Append($"\n  - {id.GetItemDefinition()?.name ?? "null"} x{inventory.GetItemIdentifierAmount(id)} (defId={id.GetItemDefinition()?.GetInstanceID() ?? 0})");
+                    }
+                    Debug.Log(sb.ToString());
+                }
+                return amount > 0;
+            }
+        }
+        else if (breachChargeItem == null)
+        {
+            Debug.Log("[DoorInteractable] Breach Charge Item is not wired — using legacy counter.");
+        }
+        return breachingChargesAvailable > 0;
+    }
+
+    /// <summary>
+    /// Consumes one breach charge from whichever source is active (inventory
+    /// if wired, legacy counter otherwise).
+    /// </summary>
+    private void ConsumeBreachCharge()
+    {
+        if (breachChargeItem != null && nearbyPlayer != null)
+        {
+            var inventory = nearbyPlayer.GetComponent<InventoryBase>();
+            if (inventory == null) inventory = nearbyPlayer.GetComponentInChildren<InventoryBase>();
+            if (inventory == null) inventory = nearbyPlayer.GetComponentInParent<InventoryBase>();
+            if (inventory != null)
+            {
+                inventory.RemoveItemIdentifierAmount(breachChargeItem.CreateItemIdentifier(), 1);
+                return;
+            }
+        }
+        breachingChargesAvailable = Mathf.Max(0, breachingChargesAvailable - 1);
+    }
+
     public void PlaceExplosiveCharge()
     {
+        if (!HasBreachChargeAvailable())
+        {
+            Debug.Log("No breach charges in inventory.");
+            return;
+        }
+
         // Get the center of the door mesh - check all children for renderers
         Vector3 chargePosition = Vector3.zero;
         bool foundRenderer = false;
@@ -226,8 +294,8 @@ public class DoorInteractable : MonoBehaviour
             {
                 Debug.Log($"Arming charge {charge.name} (ID: {charge.GetInstanceID()}) on door {door.name}");
                 chargeScript.Arm(door);
-                breachingChargesAvailable--;
-                Debug.Log($"Breaching charge placed! {breachingChargesAvailable} remaining.");
+                ConsumeBreachCharge();
+                Debug.Log("Breaching charge placed.");
             }
             else
             {
@@ -243,7 +311,7 @@ public class DoorInteractable : MonoBehaviour
     void OnGUI()
     {
         // Don't show prompt if door or doorTransform is destroyed or if radial menu is open
-        if (showPrompt && playerNearby && door != null && door.doorTransform != null && !radialMenu.IsMenuOpen() && Camera.main != null)
+        if (showPrompt && playerNearby && door != null && door.doorTransform != null && !radialMenu.IsMenuOpen() && !DoorSnakeCam.AnyActive && Camera.main != null)
         {
             // Get door position in world space
             Vector3 doorWorldPos = door.doorTransform.position + Vector3.up * 1.5f;

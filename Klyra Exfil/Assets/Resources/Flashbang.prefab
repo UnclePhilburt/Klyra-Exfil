@@ -354,7 +354,7 @@ MonoBehaviour:
   m_NonDominantHandIKTarget: {fileID: 0}
   m_NonDominantHandIKTargetHint: {fileID: 0}
   m_HolsterTarget:
-    m_ID: -1
+    m_ID: 10003
     m_Object: {fileID: 0}
 --- !u!114 &3962116772329239618
 MonoBehaviour:
