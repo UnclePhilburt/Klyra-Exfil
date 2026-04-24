@@ -24,6 +24,7 @@ namespace Klyra.Loadout
         public GameObject promptUI;
 
         private bool playerInRange = false;
+        private GameObject currentPlayer = null;
 
         private void Awake()
         {
@@ -58,6 +59,9 @@ namespace Klyra.Loadout
         {
             if (!IsPlayer(other)) return;
             playerInRange = true;
+            // Store the player GameObject so we can disable camera later
+            var body = other.attachedRigidbody;
+            currentPlayer = body != null ? body.gameObject : other.transform.root.gameObject;
             Debug.Log($"[LoadoutStation:{name}] Player in range — press {interactKey}");
             if (promptUI != null) promptUI.SetActive(true);
         }
@@ -66,9 +70,14 @@ namespace Klyra.Loadout
         {
             if (!IsPlayer(other)) return;
             playerInRange = false;
+            currentPlayer = null;
             Debug.Log($"[LoadoutStation:{name}] Player left range");
             if (promptUI != null) promptUI.SetActive(false);
-            if (loadoutUI != null) loadoutUI.SetActive(false);
+            if (loadoutUI != null && loadoutUI.activeSelf)
+            {
+                loadoutUI.SetActive(false);
+                EnablePlayerCamera(true);
+            }
         }
 
         private void Update()
@@ -86,6 +95,30 @@ namespace Klyra.Loadout
             if (promptUI != null) promptUI.SetActive(!open);
             Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = open;
+            EnablePlayerCamera(!open);
+        }
+
+        /// <summary>
+        /// Enables or disables the camera controller so the player can't look
+        /// around while the loadout menu is open.
+        /// </summary>
+        private void EnablePlayerCamera(bool enable)
+        {
+            // Use the UltimateCharacterLocomotionHandler to enable/disable input
+            var handler = currentPlayer?.GetComponent<Opsive.UltimateCharacterController.Character.UltimateCharacterLocomotionHandler>();
+            if (handler != null)
+            {
+                // EnableGameplayInput controls whether the character responds to input
+                if (enable)
+                {
+                    Opsive.Shared.Events.EventHandler.ExecuteEvent(currentPlayer, "OnEnableGameplayInput", true);
+                }
+                else
+                {
+                    Opsive.Shared.Events.EventHandler.ExecuteEvent(currentPlayer, "OnEnableGameplayInput", false);
+                }
+                Debug.Log($"[LoadoutStation] Gameplay input {(enable ? "enabled" : "disabled")}");
+            }
         }
     }
 }

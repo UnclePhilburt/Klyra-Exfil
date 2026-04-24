@@ -148,10 +148,12 @@ public class Door : MonoBehaviourPun
         // Network sync - check if PhotonView is valid first
         if (PhotonNetwork.IsConnected && photonView != null && photonView.ViewID != 0)
         {
+            Debug.Log($"[Door] Sending RPC_SetDoorState(true) on door {gameObject.name}, ViewID: {photonView.ViewID}, IsConnected: {PhotonNetwork.IsConnected}");
             photonView.RPC("RPC_SetDoorState", RpcTarget.AllBuffered, true);
         }
         else
         {
+            Debug.LogWarning($"[Door] NOT sending RPC - IsConnected: {PhotonNetwork.IsConnected}, photonView null: {photonView == null}, ViewID: {photonView?.ViewID ?? 0}");
             SetDoorState(true);
         }
 
@@ -340,11 +342,13 @@ public class Door : MonoBehaviourPun
     [PunRPC]
     void RPC_SetDoorState(bool open)
     {
+        Debug.Log($"[Door] RPC_SetDoorState({open}) received on door {gameObject.name}, ViewID: {photonView.ViewID}");
         SetDoorState(open);
     }
 
     void SetDoorState(bool open)
     {
+        Debug.Log($"[Door] SetDoorState({open}) called on door {gameObject.name}");
         isOpen = open;
         isAnimating = true;
 

@@ -30,7 +30,7 @@ namespace Klyra.Loadout.EditorTools
                 typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             var canvas = canvasGO.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 20;
+            canvas.sortingOrder = 1000; // HIGHER THAN SUBTITLES (200) SO NOTHING BLOCKS IT
             var scaler = canvasGO.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
@@ -160,12 +160,12 @@ namespace Klyra.Loadout.EditorTools
             rightHeaderRT.pivot = new Vector2(0, 1);
             rightHeaderRT.sizeDelta = new Vector2(-30, 30);
 
-            // Scroll view for item cards.
+            // Scroll view for item cards - DON'T OVERLAP AMOUNT PANEL
             var scroll = CreateScrollView(right.transform, out RectTransform gridContent);
             scroll.anchorMin = new Vector2(0, 0);
             scroll.anchorMax = new Vector2(1, 1);
             scroll.pivot = new Vector2(0.5f, 0.5f);
-            scroll.offsetMin = new Vector2(20, 170);
+            scroll.offsetMin = new Vector2(20, 140); // Above amount panel (which is at Y=20 with height 100 = goes to 120)
             scroll.offsetMax = new Vector2(-20, -70);
 
             // Item card template — disabled, cloned at runtime.
@@ -205,51 +205,80 @@ namespace Klyra.Loadout.EditorTools
             wtRT.sizeDelta = new Vector2(440, 0);
             wtRT.anchoredPosition = new Vector2(-20, 0);
 
-            // Amount panel at the bottom of the right column.
+            // Amount panel at the bottom of the right column - COMPLETELY REBUILT
             var amountPanel = NewImage(right.transform, "AmountPanel", CardBG);
             var apRT = amountPanel.rectTransform;
             apRT.anchorMin = new Vector2(0, 0);
             apRT.anchorMax = new Vector2(1, 0);
             apRT.pivot = new Vector2(0.5f, 0);
-            apRT.sizeDelta = new Vector2(-40, 80);
+            apRT.sizeDelta = new Vector2(-40, 100);
             apRT.anchoredPosition = new Vector2(0, 20);
 
-            NewText(amountPanel.transform, "AmountTitle", "AMOUNT", 16, FontStyle.Bold, TextAnchor.MiddleLeft, TextDim)
-                .rectTransform.anchoredPosition = new Vector2(30, 0);
-            var atRT = (RectTransform)amountPanel.transform.Find("AmountTitle");
-            atRT.anchorMin = atRT.anchorMax = new Vector2(0, 0.5f);
-            atRT.pivot = new Vector2(0, 0.5f);
-            atRT.sizeDelta = new Vector2(200, 40);
+            // Subtract button - CREATED FIRST SO NOTHING BLOCKS IT
+            var minusGO = new GameObject("Minus", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+            minusGO.transform.SetParent(amountPanel.transform, false);
+            var minusImg = minusGO.GetComponent<Image>();
+            minusImg.color = new Color(0.7f, 0.2f, 0.2f, 1f);
+            minusImg.raycastTarget = true;
+            var minus1Btn = minusGO.GetComponent<Button>();
+            minus1Btn.targetGraphic = minusImg;
+            var m1RT = (RectTransform)minusGO.transform;
+            m1RT.anchorMin = new Vector2(0.05f, 0.05f);
+            m1RT.anchorMax = new Vector2(0.48f, 0.55f);
+            m1RT.offsetMin = Vector2.zero;
+            m1RT.offsetMax = Vector2.zero;
 
-            var minusBtn = BuildButton(amountPanel.transform, "Minus", "–", CardBG);
-            var mRT = (RectTransform)minusBtn.transform;
-            mRT.anchorMin = mRT.anchorMax = new Vector2(0.5f, 0.5f);
-            mRT.pivot = new Vector2(0.5f, 0.5f);
-            mRT.sizeDelta = new Vector2(72, 64);
-            mRT.anchoredPosition = new Vector2(-160, 0);
+            var minusText = NewText(minusGO.transform, "Text", "−", 36, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);
+            minusText.raycastTarget = false;
+            var mtRT = minusText.rectTransform;
+            mtRT.anchorMin = Vector2.zero;
+            mtRT.anchorMax = Vector2.one;
+            mtRT.offsetMin = Vector2.zero;
+            mtRT.offsetMax = Vector2.zero;
 
-            var amountValue = NewText(amountPanel.transform, "AmountValue", "0", 32, FontStyle.Bold, TextAnchor.MiddleCenter, TextMain);
+            // Add button - bottom right
+            var plusGO = new GameObject("Plus", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+            plusGO.transform.SetParent(amountPanel.transform, false);
+            var plusImg = plusGO.GetComponent<Image>();
+            plusImg.color = new Color(0.2f, 0.7f, 0.2f, 1f);
+            plusImg.raycastTarget = true;
+            var plus1Btn = plusGO.GetComponent<Button>();
+            plus1Btn.targetGraphic = plusImg;
+            var p1RT = (RectTransform)plusGO.transform;
+            p1RT.anchorMin = new Vector2(0.52f, 0.05f);
+            p1RT.anchorMax = new Vector2(0.95f, 0.55f);
+            p1RT.offsetMin = Vector2.zero;
+            p1RT.offsetMax = Vector2.zero;
+
+            var plusText = NewText(plusGO.transform, "Text", "+", 36, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);
+            plusText.raycastTarget = false;
+            var ptRT = plusText.rectTransform;
+            ptRT.anchorMin = Vector2.zero;
+            ptRT.anchorMax = Vector2.one;
+            ptRT.offsetMin = Vector2.zero;
+            ptRT.offsetMax = Vector2.zero;
+
+            // Amount display - ABOVE buttons, no overlap AT ALL
+            var amountValue = NewText(amountPanel.transform, "AmountValue", "0", 48, FontStyle.Bold, TextAnchor.MiddleCenter, TextMain);
             var avRT = amountValue.rectTransform;
-            avRT.anchorMin = avRT.anchorMax = new Vector2(0.5f, 0.5f);
-            avRT.pivot = new Vector2(0.5f, 0.5f);
-            avRT.sizeDelta = new Vector2(140, 60);
-            avRT.anchoredPosition = Vector2.zero;
+            avRT.anchorMin = new Vector2(0, 0.6f);
+            avRT.anchorMax = new Vector2(1, 0.95f);
+            avRT.offsetMin = Vector2.zero;
+            avRT.offsetMax = Vector2.zero;
             amountValue.raycastTarget = false;
 
-            var plusBtn = BuildButton(amountPanel.transform, "Plus", "+", CardBG);
-            var pRT = (RectTransform)plusBtn.transform;
-            pRT.anchorMin = pRT.anchorMax = new Vector2(0.5f, 0.5f);
-            pRT.pivot = new Vector2(0.5f, 0.5f);
-            pRT.sizeDelta = new Vector2(72, 64);
-            pRT.anchoredPosition = new Vector2(160, 0);
+            // DESTROY the text's game object raycast - nuclear option
+            var avCanvas = amountValue.gameObject.AddComponent<CanvasGroup>();
+            avCanvas.blocksRaycasts = false;
+            avCanvas.interactable = false;
 
             // --- WIRE LoadoutUI ----------------------------------------
             var ui = canvasGO.AddComponent<LoadoutUI>();
             ui.gridContent = gridContent;
             ui.itemCardTemplate = cardTemplate;
             ui.amountPanel = amountPanel.gameObject;
-            ui.amountMinus = minusBtn;
-            ui.amountPlus = plusBtn;
+            ui.amountMinus = minus1Btn;
+            ui.amountPlus = plus1Btn;
             ui.amountValue = amountValue;
             ui.weightReadout = weightText;
             ui.weightFill = fill;
@@ -259,9 +288,13 @@ namespace Klyra.Loadout.EditorTools
             ui.slotButtons.Clear();
             ui.slotButtons.AddRange(slotRefs);
 
+            // ADD CLICK LOGGER AND RAYCAST DEBUGGER
+            canvasGO.AddComponent<ClickLogger>();
+            canvasGO.AddComponent<RaycastDebugger>();
+
             canvasGO.SetActive(false);
             Selection.activeGameObject = canvasGO;
-            Debug.Log("Loadout canvas (Ready-or-Not style) created. Drag into LoadoutStation's Loadout UI field.");
+            Debug.Log("Loadout canvas (Ready-or-Not style) created WITH CLICK LOGGING. Drag into LoadoutStation's Loadout UI field.");
         }
 
         [MenuItem("Tools/Klyra/Create Loadout Manager")]
@@ -313,6 +346,7 @@ namespace Klyra.Loadout.EditorTools
             ilRT.offsetMin = new Vector2(24, 8);
             ilRT.offsetMax = new Vector2(-16, -30);
 
+            go.raycastTarget = true; // SLOT BUTTONS NEED RAYCASTS
             var btn = go.gameObject.AddComponent<Button>();
             var colors = btn.colors;
             colors.normalColor = Color.white;
@@ -381,6 +415,7 @@ namespace Klyra.Loadout.EditorTools
             var card = NewImage(gridContent, "CardTemplate", CardBG);
             var rt = card.rectTransform;
             rt.sizeDelta = new Vector2(260, 110);
+            card.raycastTarget = true; // ITEM CARDS NEED RAYCASTS
             card.gameObject.AddComponent<Button>().targetGraphic = card;
 
             var title = NewText(card.transform, "Title", "ITEM NAME", 20, FontStyle.Bold, TextAnchor.UpperLeft, TextMain);
@@ -404,6 +439,7 @@ namespace Klyra.Loadout.EditorTools
         private static Button BuildButton(Transform parent, string name, string label, Color bg)
         {
             var img = NewImage(parent, name, bg);
+            img.raycastTarget = true; // BUTTONS NEED RAYCASTS
             var btn = img.gameObject.AddComponent<Button>();
             btn.targetGraphic = img;
             var colors = btn.colors;
@@ -417,6 +453,8 @@ namespace Klyra.Loadout.EditorTools
             var txRT = txt.rectTransform;
             txRT.anchorMin = Vector2.zero; txRT.anchorMax = Vector2.one;
             txRT.offsetMin = Vector2.zero; txRT.offsetMax = Vector2.zero;
+            // Disable raycast on text so it doesn't block button clicks
+            txt.raycastTarget = false;
             return btn;
         }
 
@@ -426,6 +464,7 @@ namespace Klyra.Loadout.EditorTools
             go.transform.SetParent(parent, false);
             var img = go.GetComponent<Image>();
             img.color = color;
+            img.raycastTarget = false; // DON'T BLOCK CLICKS BY DEFAULT
             return img;
         }
 

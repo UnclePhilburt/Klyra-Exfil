@@ -166,14 +166,16 @@ public class TacticalDoorSetup : MonoBehaviour
         {
             pv = gameObject.AddComponent<PhotonView>();
             Debug.Log("Added PhotonView component");
+
+            // Configure PhotonView for scene objects
+            // DON'T set ViewID to 0 - scene objects need their ViewID preserved!
+            pv.OwnershipTransfer = Photon.Pun.OwnershipOption.Fixed; // Scene objects should be Fixed ownership
         }
-
-        // Configure PhotonView for scene objects
-        pv.ViewID = 0; // Will be assigned by Photon
-        pv.OwnershipTransfer = Photon.Pun.OwnershipOption.Takeover;
-
-        // IMPORTANT: For doors in the scene (not spawned), we need to use PhotonTransformView or disable RPCs
-        // Since doors are scene objects, let's make them work without RPCs
+        else
+        {
+            Debug.Log($"PhotonView already exists with ViewID: {pv.ViewID}");
+            // DON'T overwrite existing ViewID for scene objects!
+        }
 
         // 6. Add Rigidbody for triggers to work
         Rigidbody rb = GetComponent<Rigidbody>();

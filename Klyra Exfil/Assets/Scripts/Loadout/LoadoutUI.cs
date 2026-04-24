@@ -46,6 +46,14 @@ namespace Klyra.Loadout
         public Button amountPlus;
         public Text amountValue;
 
+        [Header("V2 Amount Controls (optional - new canvas only)")]
+        public Slider amountSlider;
+        public InputField amountInput;
+        public Button amountMax;
+        public Button amountClear;
+        public Button amountPlus30;
+        public Button amountPlus60;
+
         [Header("Weight bar")]
         public Text weightReadout;
         public Image weightFill;
@@ -77,6 +85,8 @@ namespace Klyra.Loadout
                 return;
             }
 
+            Debug.Log($"[LoadoutUI] OnEnable - amountMinus assigned: {amountMinus != null}, amountPlus assigned: {amountPlus != null}");
+
             for (int i = 0; i < slotButtons.Count; i++)
             {
                 var captured = slotButtons[i];
@@ -89,6 +99,7 @@ namespace Klyra.Loadout
             // via its own OnPointerDown — otherwise we'd double-fire on tap.
             if (amountMinus != null)
             {
+                Debug.Log($"[LoadoutUI] Setting up Minus button: {amountMinus.name}");
                 amountMinus.onClick.RemoveAllListeners();
                 var repeat = amountMinus.GetComponent<HoldRepeatButton>()
                     ?? amountMinus.gameObject.AddComponent<HoldRepeatButton>();
@@ -96,10 +107,55 @@ namespace Klyra.Loadout
             }
             if (amountPlus != null)
             {
+                Debug.Log($"[LoadoutUI] Setting up Plus button: {amountPlus.name}");
                 amountPlus.onClick.RemoveAllListeners();
                 var repeat = amountPlus.GetComponent<HoldRepeatButton>()
                     ?? amountPlus.gameObject.AddComponent<HoldRepeatButton>();
                 repeat.onRepeat = () => AdjustAmount(+1);
+            }
+
+            // V2 Controls - Slider and input field
+            if (amountSlider != null)
+            {
+                amountSlider.onValueChanged.RemoveAllListeners();
+                amountSlider.onValueChanged.AddListener(OnSliderChanged);
+            }
+            if (amountInput != null)
+            {
+                amountInput.onEndEdit.RemoveAllListeners();
+                amountInput.onEndEdit.AddListener(OnInputChanged);
+            }
+            if (amountMax != null)
+            {
+                amountMax.onClick.RemoveAllListeners();
+                amountMax.onClick.AddListener(() => {
+                    Debug.Log("[LoadoutUI] MAX button clicked");
+                    OnMaxClicked();
+                });
+            }
+            if (amountClear != null)
+            {
+                amountClear.onClick.RemoveAllListeners();
+                amountClear.onClick.AddListener(() => {
+                    Debug.Log("[LoadoutUI] CLEAR button clicked");
+                    SetAmount(0);
+                });
+            }
+            if (amountPlus30 != null)
+            {
+                amountPlus30.onClick.RemoveAllListeners();
+                amountPlus30.onClick.AddListener(() => {
+                    Debug.Log("[LoadoutUI] +30 button clicked");
+                    AdjustAmount(30);
+                });
+            }
+            if (amountPlus60 != null)
+            {
+                amountPlus60.onClick.RemoveAllListeners();
+                amountPlus60.onClick.AddListener(() => {
+                    Debug.Log("[LoadoutUI] +60 button clicked");
+                    AdjustAmount(60);
+                });
             }
 
             if (saveButton != null)
@@ -174,6 +230,7 @@ namespace Klyra.Loadout
 
         private void SelectSlot(SlotId id)
         {
+            Debug.Log($"[LoadoutUI] SelectSlot called with id={id}");
             selectedSlot = id;
             for (int i = 0; i < slotButtons.Count; i++)
             {
@@ -185,13 +242,17 @@ namespace Klyra.Loadout
                         : new Color(accentSelected.r, accentSelected.g, accentSelected.b, 0f);
                 }
             }
-            if (amountPanel != null) amountPanel.SetActive(SlotNeedsAmount(id));
+            bool needsAmount = SlotNeedsAmount(id);
+            Debug.Log($"[LoadoutUI] Slot {id} needs amount panel: {needsAmount}");
+            if (amountPanel != null) amountPanel.SetActive(needsAmount);
+            UpdateSliderMax();
             RefreshAmountLabel();
             RebuildGrid();
         }
 
         private void AdjustAmount(int delta)
         {
+            Debug.Log($"[LoadoutUI] AdjustAmount called with delta={delta}");
             var slot = GetSlot(selectedSlot);
             if (slot == null || string.IsNullOrEmpty(slot.itemName))
             {
@@ -211,7 +272,9 @@ namespace Klyra.Loadout
                 }
             }
 
+            int oldAmount = slot.amount;
             slot.amount = Mathf.Max(0, slot.amount + delta);
+            Debug.Log($"[LoadoutUI] Amount changed from {oldAmount} to {slot.amount}");
             RefreshAmountLabel();
             RefreshSlotLabel(selectedSlot);
             RefreshWeightBar();
@@ -220,7 +283,104 @@ namespace Klyra.Loadout
         private void RefreshAmountLabel()
         {
             var slot = GetSlot(selectedSlot);
-            if (amountValue != null && slot != null) amountValue.text = slot.amount.ToString();
+            if (slot == null) return;
+
+            int amount = slot.amount;
+
+            // Update text display
+            if (amountValue != null) amountValue.text = amount.ToString();
+
+            // Update slider if using V2
+            if (amountSlider != null)
+            {
+                amountSlider.SetValueWithoutNotify(amount);
+            }
+
+            // Update input field if using V2
+            if (amountInput != null)
+            {
+                amountInput.SetTextWithoutNotify(amount.ToString());
+            }
+        }
+
+        private void OnSliderChanged(float value)
+        {
+            Debug.Log($"[LoadoutUI] Slider changed to {value}");
+            SetAmount((int)value);
+        }
+
+        private void OnInputChanged(string text)
+        {
+            if (int.TryParse(text, out int value))
+            {
+                SetAmount(value);
+            }
+        }
+
+        private void OnMaxClicked()
+        {
+            var slot = GetSlot(selectedSlot);
+            if (slot == null || string.IsNullOrEmpty(slot.itemName)) return;
+
+            // Calculate max possible based on weight
+            var entry = LoadoutManager.Instance.FindEntry(slot.itemName);
+            if (entry == null || entry.weightPerUnit <= 0f)
+            {
+                SetAmount(999); // No weight limit
+                return;
+            }
+
+            float remaining = LoadoutManager.Instance.RemainingCapacity();
+            int max = Mathf.FloorToInt(remaining / entry.weightPerUnit);
+            SetAmount(max);
+        }
+
+        private void SetAmount(int value)
+        {
+            var slot = GetSlot(selectedSlot);
+            if (slot == null || string.IsNullOrEmpty(slot.itemName)) return;
+
+            // Clamp to capacity
+            var entry = LoadoutManager.Instance.FindEntry(slot.itemName);
+            if (entry != null && entry.weightPerUnit > 0f)
+            {
+                float remaining = LoadoutManager.Instance.RemainingCapacity();
+                int maxByCap = Mathf.FloorToInt(remaining / entry.weightPerUnit);
+                value = Mathf.Clamp(value, 0, maxByCap);
+            }
+            else
+            {
+                value = Mathf.Max(0, value);
+            }
+
+            slot.amount = value;
+            RefreshAmountLabel();
+            RefreshSlotLabel(selectedSlot);
+            RefreshWeightBar();
+            UpdateSliderMax();
+        }
+
+        private void UpdateSliderMax()
+        {
+            if (amountSlider == null) return;
+
+            var slot = GetSlot(selectedSlot);
+            if (slot == null || string.IsNullOrEmpty(slot.itemName))
+            {
+                amountSlider.maxValue = 100;
+                return;
+            }
+
+            var entry = LoadoutManager.Instance.FindEntry(slot.itemName);
+            if (entry == null || entry.weightPerUnit <= 0f)
+            {
+                amountSlider.maxValue = 999;
+                return;
+            }
+
+            float remaining = LoadoutManager.Instance.RemainingCapacity();
+            int max = Mathf.FloorToInt(remaining / entry.weightPerUnit);
+            amountSlider.maxValue = Mathf.Max(1, max);
         }
 
         private void RefreshWeightBar()

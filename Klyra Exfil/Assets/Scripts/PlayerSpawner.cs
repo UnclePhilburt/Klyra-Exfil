@@ -19,14 +19,31 @@ public class PlayerSpawner : MonoBehaviour
 
     void Start()
     {
+        Debug.Log($"[PlayerSpawner] Start - IsConnected: {PhotonNetwork.IsConnected}, IsMasterClient: {PhotonNetwork.IsMasterClient}, PlayerCount: {PhotonNetwork.CurrentRoom?.PlayerCount}");
+
         // Only spawn if we're connected and don't already have a player
         if (PhotonNetwork.IsConnected && !HasSpawnedPlayer())
         {
-            SpawnPlayer();
+            Debug.Log($"[PlayerSpawner] No player spawned yet, proceeding to spawn");
+            // Add a small delay for non-master clients to ensure scene is fully loaded
+            if (PhotonNetwork.IsMasterClient)
+            {
+                Debug.Log("[PlayerSpawner] Master client spawning immediately");
+                SpawnPlayer();
+            }
+            else
+            {
+                Debug.Log("[PlayerSpawner] Non-master client spawning with delay");
+                Invoke(nameof(SpawnPlayer), 0.5f);
+            }
         }
         else if (!PhotonNetwork.IsConnected)
         {
-            Debug.LogWarning("Not connected to Photon. Player will not spawn.");
+            Debug.LogWarning("[PlayerSpawner] Not connected to Photon. Player will not spawn.");
+        }
+        else
+        {
+            Debug.Log("[PlayerSpawner] Player already spawned, skipping.");
         }
     }
 

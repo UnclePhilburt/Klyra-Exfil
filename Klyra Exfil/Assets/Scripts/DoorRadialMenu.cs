@@ -50,10 +50,10 @@ public class DoorRadialMenu : MonoBehaviour
         // has already run (Unity doesn't guarantee Start ordering).
         menuOptions = new MenuOption[]
         {
-            new MenuOption { name = "OPEN", angle = 45f, action = () => targetDoor?.Toggle() },
-            new MenuOption { name = "SNAKE CAM", angle = 135f, action = () => targetDoor?.GetComponent<DoorSnakeCam>()?.ToggleSnakeCam() },
-            new MenuOption { name = "BREACH", angle = 225f, action = () => targetDoor?.Breach() },
-            new MenuOption { name = "EXPLOSIVE", angle = 315f, action = () => doorInteractable?.PlaceExplosiveCharge() }
+            new MenuOption { name = "OPEN", angle = 45f, action = () => { Debug.Log("[DoorRadialMenu] OPEN selected"); targetDoor?.Toggle(); } },
+            new MenuOption { name = "SNAKE CAM", angle = 135f, action = () => { Debug.Log("[DoorRadialMenu] SNAKE CAM selected"); targetDoor?.GetComponent<DoorSnakeCam>()?.ToggleSnakeCam(); } },
+            new MenuOption { name = "BREACH", angle = 225f, action = () => { Debug.Log("[DoorRadialMenu] BREACH selected"); targetDoor?.Breach(); } },
+            new MenuOption { name = "EXPLOSIVE", angle = 315f, action = () => { Debug.Log("[DoorRadialMenu] EXPLOSIVE selected"); doorInteractable?.PlaceExplosiveCharge(); } }
         };
 
         InitializeGraphics();
@@ -102,6 +102,7 @@ public class DoorRadialMenu : MonoBehaviour
             }
             else if (holdTimer > 0f && holdTimer < holdTime && !hasExecuted)
             {
+                Debug.Log($"[DoorRadialMenu] Quick tap detected, calling Toggle() on door {targetDoor?.gameObject.name}");
                 targetDoor?.Toggle();
                 hasExecuted = true;
             }

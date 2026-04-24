@@ -27,6 +27,9 @@ public class AutoConnectPUN : MonoBehaviourPunCallbacks
     {
         Log("Connecting to Photon servers...");
 
+        // Enable automatic scene syncing so all clients load the same scene
+        PhotonNetwork.AutomaticallySyncScene = true;
+
         // Make sure we're using the settings from PhotonServerSettings
         PhotonNetwork.ConnectUsingSettings();
     }
@@ -49,16 +52,12 @@ public class AutoConnectPUN : MonoBehaviourPunCallbacks
         Log($"Joined room: {PhotonNetwork.CurrentRoom.Name}. Players in room: {PhotonNetwork.CurrentRoom.PlayerCount}");
         Log($"Loading gameplay scene: {gameplaySceneName}");
 
-        // Load the scene - PhotonNetwork.AutomaticallySyncScene will handle syncing
-        // Or we manually load for everyone
+        // Only master client loads the scene when using Opsive's spawner
+        // AutomaticallySyncScene will handle loading for non-master clients
+        // This timing ensures OnPlayerEnteredRoom fires correctly for spawning
         if (PhotonNetwork.IsMasterClient)
         {
             PhotonNetwork.LoadLevel(gameplaySceneName);
-        }
-        else
-        {
-            // Client also loads the scene
-            SceneManager.LoadScene(gameplaySceneName);
         }
     }
 

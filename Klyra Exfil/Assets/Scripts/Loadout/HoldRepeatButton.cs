@@ -29,9 +29,18 @@ namespace Klyra.Loadout
 
         public void OnPointerDown(PointerEventData eventData)
         {
+            Debug.Log($"[HoldRepeatButton] OnPointerDown called on {gameObject.name}, onRepeat null? {onRepeat == null}");
             holding = true;
             currentInterval = startInterval;
-            onRepeat?.Invoke();
+            if (onRepeat != null)
+            {
+                Debug.Log($"[HoldRepeatButton] Invoking onRepeat on {gameObject.name}");
+                onRepeat.Invoke();
+            }
+            else
+            {
+                Debug.LogError($"[HoldRepeatButton] onRepeat is NULL on {gameObject.name}!");
+            }
             nextFireTime = Time.unscaledTime + initialDelay;
         }
 
