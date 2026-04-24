@@ -46,42 +46,79 @@ namespace Klyra.Loadout
             if (promptUI != null) promptUI.SetActive(false);
         }
 
-        private bool IsPlayer(Collider other)
-        {
-            // Child bone colliders on UCC characters are Untagged; the root
-            // holds the tag. Rigidbody.attachedRigidbody walks to the root.
-            var body = other.attachedRigidbody;
-            var root = body != null ? body.gameObject : other.transform.root.gameObject;
-            return root.CompareTag(playerTag);
-        }
+        private Collider triggerCollider;
 
-        private void OnTriggerEnter(Collider other)
+        private Collider GetTriggerCollider()
         {
-            if (!IsPlayer(other)) return;
-            playerInRange = true;
-            // Store the player GameObject so we can disable camera later
-            var body = other.attachedRigidbody;
-            currentPlayer = body != null ? body.gameObject : other.transform.root.gameObject;
-            Debug.Log($"[LoadoutStation:{name}] Player in range — press {interactKey}");
-            if (promptUI != null) promptUI.SetActive(true);
-        }
-
-        private void OnTriggerExit(Collider other)
-        {
-            if (!IsPlayer(other)) return;
-            playerInRange = false;
-            currentPlayer = null;
-            Debug.Log($"[LoadoutStation:{name}] Player left range");
-            if (promptUI != null) promptUI.SetActive(false);
-            if (loadoutUI != null && loadoutUI.activeSelf)
+            if (triggerCollider != null) return triggerCollider;
+            var cols = GetComponents<Collider>();
+            for (int i = 0; i < cols.Length; i++)
             {
-                loadoutUI.SetActive(false);
-                EnablePlayerCamera(true);
+                if (cols[i].isTrigger) { triggerCollider = cols[i]; return cols[i]; }
             }
+            return null;
+        }
+
+        /// <summary>
+        /// Polls every frame for the local player inside our trigger. We use
+        /// this instead of OnTriggerEnter/Exit because when the player is
+        /// destroyed + respawned in place (character swap), Unity doesn't
+        /// always fire a fresh enter event on the newly spawned body.
+        /// </summary>
+        private void UpdatePlayerInRange()
+        {
+            var local = FindLocalPlayer();
+            bool nowInRange = false;
+            if (local != null)
+            {
+                var trg = GetTriggerCollider();
+                if (trg != null)
+                {
+                    // Take the closest point on the trigger to the player; if
+                    // it equals the player's position, they're inside.
+                    var closest = trg.ClosestPoint(local.transform.position);
+                    nowInRange = (closest - local.transform.position).sqrMagnitude < 0.0001f;
+                }
+            }
+
+            if (nowInRange != playerInRange)
+            {
+                playerInRange = nowInRange;
+                currentPlayer = nowInRange ? local : null;
+                if (promptUI != null) promptUI.SetActive(nowInRange);
+                if (nowInRange)
+                {
+                    Debug.Log($"[LoadoutStation:{name}] Player in range — press {interactKey}");
+                }
+                else
+                {
+                    Debug.Log($"[LoadoutStation:{name}] Player left range");
+                    CloseLoadoutUI();
+                }
+            }
+            else if (nowInRange)
+            {
+                // Keep currentPlayer fresh in case the local player respawned.
+                currentPlayer = local;
+            }
+        }
+
+        /// <summary>
+        /// Full close: hides the UI, restores cursor lock, and re-enables
+        /// gameplay input on whatever the local player currently is (the old
+        /// reference may have been destroyed by a respawn, so re-resolve).
+        /// </summary>
+        public void CloseLoadoutUI()
+        {
+            if (loadoutUI != null && loadoutUI.activeSelf) loadoutUI.SetActive(false);
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            EnablePlayerCamera(true);
         }
 
         private void Update()
         {
+            UpdatePlayerInRange();
             if (!playerInRange) return;
             var kb = Keyboard.current;
             if (kb == null) return;
@@ -104,21 +141,31 @@ namespace Klyra.Loadout
         /// </summary>
         private void EnablePlayerCamera(bool enable)
         {
-            // Use the UltimateCharacterLocomotionHandler to enable/disable input
-            var handler = currentPlayer?.GetComponent<Opsive.UltimateCharacterController.Character.UltimateCharacterLocomotionHandler>();
-            if (handler != null)
+            // Prefer the stored reference but fall back to the local player in
+            // the scene — the stored one may have been destroyed during a
+            // character-swap respawn.
+            var target = currentPlayer != null ? currentPlayer : FindLocalPlayer();
+            if (target == null) return;
+
+            var handler = target.GetComponent<Opsive.UltimateCharacterController.Character.UltimateCharacterLocomotionHandler>();
+            if (handler == null) return;
+
+            Opsive.Shared.Events.EventHandler.ExecuteEvent(target, "OnEnableGameplayInput", enable);
+            Debug.Log($"[LoadoutStation] Gameplay input {(enable ? "enabled" : "disabled")} on '{target.name}'");
+        }
+
+        private GameObject FindLocalPlayer()
+        {
+            var pvs = Object.FindObjectsOfType<Photon.Pun.PhotonView>();
+            for (int i = 0; i < pvs.Length; i++)
             {
-                // EnableGameplayInput controls whether the character responds to input
-                if (enable)
+                if (!pvs[i].IsMine) continue;
+                if (pvs[i].GetComponent<Opsive.UltimateCharacterController.Character.UltimateCharacterLocomotion>() != null)
                 {
-                    Opsive.Shared.Events.EventHandler.ExecuteEvent(currentPlayer, "OnEnableGameplayInput", true);
+                    return pvs[i].gameObject;
                 }
-                else
-                {
-                    Opsive.Shared.Events.EventHandler.ExecuteEvent(currentPlayer, "OnEnableGameplayInput", false);
-                }
-                Debug.Log($"[LoadoutStation] Gameplay input {(enable ? "enabled" : "disabled")}");
             }
+            return null;
         }
     }
 }

@@ -18246,6 +18246,10 @@ MonoBehaviour:
     sceneName: CrimeHouse
     description: CrimeHouse
     thumbnail: {fileID: 0}
+  - missionName: Office
+    sceneName: Office
+    description: Office
+    thumbnail: {fileID: 0}
   openMenuSound: {fileID: 0}
   selectMissionSound: {fileID: 0}
 --- !u!1 &882885593

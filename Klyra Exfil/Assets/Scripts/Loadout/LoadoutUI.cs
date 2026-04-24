@@ -203,6 +203,21 @@ namespace Klyra.Loadout
             mgr.CurrentCharacter = mgr.availableCharacters[index];
             Debug.Log($"Character set to '{mgr.CurrentCharacter}'. Respawning now.");
             PlayerSpawner.RespawnLocalPlayer();
+
+            // Close the loadout panel so the LoadoutStation's cleanup path runs
+            // (cursor lock + gameplay input re-enabled on the *new* player).
+            // Without this, the UI stays open, cursor stays unlocked, and no
+            // other interactable (raid table, doors, etc.) responds.
+            var station = UnityEngine.Object.FindObjectOfType<LoadoutStation>();
+            if (station != null)
+            {
+                station.CloseLoadoutUI();
+            }
+            else
+            {
+                // Fallback — just hide this canvas if no station is around.
+                gameObject.SetActive(false);
+            }
         }
 
         private void OnDisable() { ClearSpawnedCards(); }
