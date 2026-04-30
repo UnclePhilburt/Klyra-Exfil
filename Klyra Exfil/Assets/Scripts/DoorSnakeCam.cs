@@ -135,14 +135,14 @@ public class DoorSnakeCam : MonoBehaviour
         snakeCam.enabled = false; // Start disabled
         snakeCam.depth = 10; // Render on top
 
-        // Calculate position (low to ground, forward from door - NEGATIVE to go through to other side)
-        snakeCamPosition = transform.position + (-transform.forward * peekDistance);
+        // Calculate position (low to ground, forward from door - POSITIVE to go through to other side)
+        snakeCamPosition = transform.position + (transform.forward * peekDistance);
         snakeCamPosition.y = transform.position.y + camHeight;
 
         camObj.transform.position = snakeCamPosition;
 
-        // Point camera forward and slightly down to see under door
-        Vector3 lookDirection = transform.forward;
+        // Point camera in the direction it peeked (into the room)
+        Vector3 lookDirection = transform.forward; // Look in the direction we moved
         camObj.transform.rotation = Quaternion.LookRotation(lookDirection) * Quaternion.Euler(10, 0, 0); // Tilt down 10 degrees
 
         // Create render texture

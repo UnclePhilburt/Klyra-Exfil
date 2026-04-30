@@ -349,6 +349,9 @@ public class Door : MonoBehaviourPun
     void SetDoorState(bool open)
     {
         Debug.Log($"[Door] SetDoorState({open}) called on door {gameObject.name}");
+
+        bool stateChanged = (isOpen != open);
+
         isOpen = open;
         isAnimating = true;
 
@@ -366,6 +369,51 @@ public class Door : MonoBehaviourPun
         else
         {
             PlaySound(closeSound);
+        }
+
+        // NOTIFY AI IN NEARBY ROOMS that this door state changed
+        if (stateChanged)
+        {
+            NotifyNearbyAI(open);
+        }
+    }
+
+    /// <summary>
+    /// Notify AI in connected rooms that this door opened/closed
+    /// </summary>
+    void NotifyNearbyAI(bool opened)
+    {
+        var doorConnector = GetComponent<Klyra.AI.DoorRoomConnector>();
+        if (doorConnector == null)
+        {
+            // No room connector - can't notify rooms
+            return;
+        }
+
+        Debug.Log($"[Door] Notifying AI in {doorConnector.connectedRooms.Count} connected rooms that door {(opened ? "OPENED" : "CLOSED")}");
+
+        // Notify AI in all connected rooms
+        foreach (var room in doorConnector.connectedRooms)
+        {
+            if (room == null) continue;
+
+            var aiInRoom = room.GetAIInRoom();
+            Debug.Log($"[Door] Found {aiInRoom.Count} AI in room {room.roomName}");
+
+            foreach (var ai in aiInRoom)
+            {
+                if (ai == null) continue;
+
+                // Notify AI about door state change
+                if (opened)
+                {
+                    ai.OnDoorOpened(transform.position, gameObject);
+                }
+                else
+                {
+                    ai.OnDoorClosed(transform.position, gameObject);
+                }
+            }
         }
     }
 

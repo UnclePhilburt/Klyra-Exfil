@@ -2784,7 +2784,7 @@ MonoBehaviour:
       m_PostInfinity: 2
       m_RotationOrder: 4
   constellationIntensity:
-    overrideValue: 1
+    overrideValue: 0
     mode: 1
     colorVal: {r: 1, g: 1, b: 1, a: 1}
     gradientVal:

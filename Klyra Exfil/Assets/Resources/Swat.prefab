@@ -325,6 +325,10 @@ GameObject:
   - component: {fileID: -1956849582533942913}
   - component: {fileID: 6692928175460132073}
   - component: {fileID: 7221282583523541556}
+  - component: {fileID: -310304978777323795}
+  - component: {fileID: 790814810316693304}
+  - component: {fileID: 3420806673927623101}
+  - component: {fileID: 5648385277230139270}
   m_Layer: 31
   m_Name: Swat
   m_TagString: Player
@@ -510,11 +514,11 @@ MonoBehaviour:
   m_ThirdPersonStateName: ThirdPerson
   m_MovingStateName: Moving
   m_AirborneStateName: Airborne
-  m_MovementTypeFullName: Opsive.UltimateCharacterController.ThirdPersonController.Character.MovementTypes.Combat
-  m_FirstPersonMovementTypeFullName: 
+  m_MovementTypeFullName: Opsive.UltimateCharacterController.FirstPersonController.Character.MovementTypes.Combat
+  m_FirstPersonMovementTypeFullName: Opsive.UltimateCharacterController.FirstPersonController.Character.MovementTypes.Combat
   m_ThirdPersonMovementTypeFullName: Opsive.UltimateCharacterController.ThirdPersonController.Character.MovementTypes.Combat
   m_MovementTypes:
-  - rid: 1894418368635339108
+  - rid: 1894418415798190238
   m_Abilities:
   - rid: 1894418368635339093
   - rid: 1894418368635339094
@@ -1236,7 +1240,7 @@ MonoBehaviour:
           m_Preset: {fileID: 0}
           m_BlockList: []
           m_Default: 1
-        m_Enabled: 1
+        m_Enabled: 0
         m_StartType: 2
         m_StopType: 1
         m_InputNames:
@@ -1293,7 +1297,7 @@ MonoBehaviour:
           m_Preset: {fileID: 0}
           m_BlockList: []
           m_Default: 1
-        m_Enabled: 1
+        m_Enabled: 0
         m_StartType: 2
         m_StopType: 1
         m_InputNames:
@@ -1458,8 +1462,8 @@ MonoBehaviour:
         m_StopSpeedChange: 1
         m_ActivateInFirstPerson: 1
         m_RotateTowardsLookSourceTarget: 1
-    - rid: 1894418368635339108
-      type: {class: Combat, ns: Opsive.UltimateCharacterController.ThirdPersonController.Character.MovementTypes, asm: Opsive.UltimateCharacterController}
+    - rid: 1894418415798190238
+      type: {class: Combat, ns: Opsive.UltimateCharacterController.FirstPersonController.Character.MovementTypes, asm: Opsive.UltimateCharacterController}
       data:
         m_States:
         - m_Name: Default
@@ -1850,7 +1854,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cd23e724aa8e2e741afb465e399af4d2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VoiceLineSystem
-  voiceKey: v
+  voiceKey: x
   holdTime: 0.25
   audioRange: 20
   voiceLines:
@@ -1888,6 +1892,66 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Klyra.Loadout.LoadoutApplier
   clearExistingLoadout: 1
+--- !u!114 &-310304978777323795
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4035380395569597505}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b1f2e9f4d364cf4abf072fb698dde4c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SimpleCrosshair
+  dotSize: 4
+  crosshairColor: {r: 1, g: 1, b: 1, a: 1}
+  showCrosshair: 1
+--- !u!114 &790814810316693304
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4035380395569597505}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91cff42047908f34e9009193b98af766, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GunshotBroadcaster
+  gunshotHearingRange: 25
+  aiLayer:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &3420806673927623101
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4035380395569597505}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b4fbc9ffa66eae4b98726c2f514d400, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SimpleGrenadeThrow
+  throwKey: 21
+  grenadeItemName: Flashbang
+  grenadePrefab: {fileID: 4063123627202793485, guid: ba07115d3238c5848a9fbbde0f566e57, type: 3}
+  throwForce: 15
+  spawnOffset: {x: 0, y: 0, z: 1}
+--- !u!114 &5648385277230139270
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4035380395569597505}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbaa7f122675ec240b7c8b469561ece6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Klyra.AI.RoomDebugger
 --- !u!1 &4378241798259749224
 GameObject:
   m_ObjectHideFlags: 0

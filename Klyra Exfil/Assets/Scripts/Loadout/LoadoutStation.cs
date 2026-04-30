@@ -99,6 +99,18 @@ namespace Klyra.Loadout
         }
 
         /// <summary>
+        /// Full close: hides the UI, restores cursor lock, and re-enables
+        /// gameplay input on the current player.
+        /// </summary>
+        public void CloseLoadoutUI()
+        {
+            if (loadoutUI != null && loadoutUI.activeSelf) loadoutUI.SetActive(false);
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            EnablePlayerCamera(true);
+        }
+
+        /// <summary>
         /// Enables or disables the camera controller so the player can't look
         /// around while the loadout menu is open.
         /// </summary>

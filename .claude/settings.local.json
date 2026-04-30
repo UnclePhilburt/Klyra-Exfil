@@ -28,7 +28,8 @@
       "Bash(dir:*)",
       "Bash(git pull:*)",
       "Bash(powershell -Command \"Select-String -Path CrimeHouse.unity -Pattern ''SingleCharacterSpawnManager'' -Context 20,5 | Select-Object -First 1\")",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(powershell -Command \"Write-Host ''Key enum value 20 in Unity InputSystem is typically the F key''\")"
     ],
     "deny": [],
     "ask": []

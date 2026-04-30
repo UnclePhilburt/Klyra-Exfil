@@ -26,8 +26,8 @@ public class DoorInteractable : MonoBehaviour
     [Tooltip("UCC Item Definition for a breach charge. When set, placement pulls from the player's inventory (loadout-driven). Leave null to fall back to the legacy breachingChargesAvailable counter.")]
     public ItemDefinitionBase breachChargeItem;
 
-    [Tooltip("Legacy fallback count — used only when Breach Charge Item is unset.")]
-    public int breachingChargesAvailable = 3;
+    [Tooltip("Legacy fallback count — used only when Breach Charge Item is unset. Set to 0 to require inventory system.")]
+    public int breachingChargesAvailable = 0;
 
     [Tooltip("How close player needs to be to interact")]
     public float interactionDistance = 2f;
@@ -120,6 +120,15 @@ public class DoorInteractable : MonoBehaviour
 
         if (characterLocomotion != null)
         {
+            // IMPORTANT: Check if it's an AI enemy (has TacticalAI component)
+            // If it's an enemy, ignore it - only players should interact with doors
+            TacticalAI aiComponent = characterLocomotion.GetComponent<TacticalAI>();
+            if (aiComponent != null)
+            {
+                Debug.Log("AI enemy detected - ignoring for door interaction");
+                return;
+            }
+
             // Check if character is alive (has Health component and is alive)
             Opsive.UltimateCharacterController.Traits.Health health = characterLocomotion.GetComponent<Opsive.UltimateCharacterController.Traits.Health>();
             if (health != null && !health.IsAlive())
@@ -162,7 +171,34 @@ public class DoorInteractable : MonoBehaviour
     /// </summary>
     public bool HasBreachChargeAvailable()
     {
-        if (breachChargeItem != null && nearbyPlayer != null)
+        if (nearbyPlayer == null)
+        {
+            return false;
+        }
+
+        // Get the breach charge item definition
+        ItemDefinitionBase chargeItem = breachChargeItem;
+
+        // If not manually assigned, try to find it from LoadoutManager
+        if (chargeItem == null)
+        {
+            var loadoutManager = Klyra.Loadout.LoadoutManager.Instance;
+            if (loadoutManager != null)
+            {
+                chargeItem = loadoutManager.FindItem("BreachingCharge");
+                if (chargeItem == null)
+                {
+                    chargeItem = loadoutManager.FindItem("Breaching Charge");
+                }
+                if (chargeItem == null)
+                {
+                    chargeItem = loadoutManager.FindItem("Breach Charge");
+                }
+            }
+        }
+
+        // If we have an item definition, check inventory
+        if (chargeItem != null)
         {
             // UCC inventory can sit on the root or a child — search both.
             var inventory = nearbyPlayer.GetComponent<InventoryBase>();
@@ -175,26 +211,16 @@ public class DoorInteractable : MonoBehaviour
             }
             else
             {
-                int amount = inventory.GetItemIdentifierAmount(breachChargeItem.CreateItemIdentifier());
-                Debug.Log($"[DoorInteractable] Looking for '{breachChargeItem.name}' (id={breachChargeItem.GetInstanceID()}). Inventory has {amount}.");
-                if (amount == 0)
-                {
-                    // Dump everything in the inventory so we can see what's actually there.
-                    var allIds = inventory.GetAllItemIdentifiers();
-                    var sb = new System.Text.StringBuilder("[DoorInteractable] Inventory contents:");
-                    foreach (var id in allIds)
-                    {
-                        sb.Append($"\n  - {id.GetItemDefinition()?.name ?? "null"} x{inventory.GetItemIdentifierAmount(id)} (defId={id.GetItemDefinition()?.GetInstanceID() ?? 0})");
-                    }
-                    Debug.Log(sb.ToString());
-                }
+                int amount = inventory.GetItemIdentifierAmount(chargeItem.CreateItemIdentifier());
+                Debug.Log($"[DoorInteractable] Checking inventory for '{chargeItem.name}': {amount} available");
                 return amount > 0;
             }
         }
-        else if (breachChargeItem == null)
+        else
         {
-            Debug.Log("[DoorInteractable] Breach Charge Item is not wired — using legacy counter.");
+            Debug.Log("[DoorInteractable] Breach Charge Item is not wired and not found in LoadoutManager — using legacy counter.");
         }
+
         return breachingChargesAvailable > 0;
     }
 
@@ -204,18 +230,49 @@ public class DoorInteractable : MonoBehaviour
     /// </summary>
     private void ConsumeBreachCharge()
     {
-        if (breachChargeItem != null && nearbyPlayer != null)
+        if (nearbyPlayer == null)
+        {
+            return;
+        }
+
+        // Get the breach charge item definition (same logic as HasBreachChargeAvailable)
+        ItemDefinitionBase chargeItem = breachChargeItem;
+
+        // If not manually assigned, try to find it from LoadoutManager
+        if (chargeItem == null)
+        {
+            var loadoutManager = Klyra.Loadout.LoadoutManager.Instance;
+            if (loadoutManager != null)
+            {
+                chargeItem = loadoutManager.FindItem("BreachingCharge");
+                if (chargeItem == null)
+                {
+                    chargeItem = loadoutManager.FindItem("Breaching Charge");
+                }
+                if (chargeItem == null)
+                {
+                    chargeItem = loadoutManager.FindItem("Breach Charge");
+                }
+            }
+        }
+
+        // Try to consume from inventory
+        if (chargeItem != null)
         {
             var inventory = nearbyPlayer.GetComponent<InventoryBase>();
             if (inventory == null) inventory = nearbyPlayer.GetComponentInChildren<InventoryBase>();
             if (inventory == null) inventory = nearbyPlayer.GetComponentInParent<InventoryBase>();
             if (inventory != null)
             {
-                inventory.RemoveItemIdentifierAmount(breachChargeItem.CreateItemIdentifier(), 1);
+                inventory.RemoveItemIdentifierAmount(chargeItem.CreateItemIdentifier(), 1);
+                Debug.Log($"[DoorInteractable] Consumed 1 {chargeItem.name} from inventory");
                 return;
             }
         }
+
+        // Fall back to legacy counter
         breachingChargesAvailable = Mathf.Max(0, breachingChargesAvailable - 1);
+        Debug.Log($"[DoorInteractable] Consumed 1 charge from legacy counter. Remaining: {breachingChargesAvailable}");
     }
 
     public void PlaceExplosiveCharge()

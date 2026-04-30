@@ -30,13 +30,22 @@ public class AutoConnectPUN : MonoBehaviourPunCallbacks
         // Enable automatic scene syncing so all clients load the same scene
         PhotonNetwork.AutomaticallySyncScene = true;
 
+        // IMPORTANT: Force everyone to the same region so they can find each other
+        // Comment this out if you want automatic region selection
+        PhotonNetwork.PhotonServerSettings.AppSettings.FixedRegion = "us"; // us, eu, asia, etc.
+
+        Log($"Room name will be: '{roomName}'");
+        Log($"Photon App ID: {PhotonNetwork.PhotonServerSettings.AppSettings.AppIdRealtime}");
+        Log($"Fixed Region: {PhotonNetwork.PhotonServerSettings.AppSettings.FixedRegion}");
+
         // Make sure we're using the settings from PhotonServerSettings
         PhotonNetwork.ConnectUsingSettings();
     }
 
     public override void OnConnectedToMaster()
     {
-        Log("Connected to Master Server. Joining/Creating room...");
+        Log($"Connected to Master Server in region: {PhotonNetwork.CloudRegion}");
+        Log($"Attempting to join/create room: '{roomName}'");
 
         RoomOptions roomOptions = new RoomOptions();
         roomOptions.MaxPlayers = (byte)maxPlayersPerRoom;

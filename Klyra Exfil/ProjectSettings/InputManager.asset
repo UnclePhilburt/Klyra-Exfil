@@ -599,12 +599,12 @@ InputManager:
     joyNum: 0
   - serializedVersion: 3
     m_Name: Equip Next Item
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: e
-    altNegativeButton: 
-    altPositiveButton: 
+    descriptiveName:
+    descriptiveNegativeName:
+    negativeButton:
+    positiveButton:
+    altNegativeButton:
+    altPositiveButton:
     gravity: 1000
     dead: 0.001
     sensitivity: 1000
@@ -631,12 +631,12 @@ InputManager:
     joyNum: 0
   - serializedVersion: 3
     m_Name: Equip Previous Item
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: 
-    positiveButton: q
-    altNegativeButton: 
-    altPositiveButton: 
+    descriptiveName:
+    descriptiveNegativeName:
+    negativeButton:
+    positiveButton:
+    altNegativeButton:
+    altPositiveButton:
     gravity: 1000
     dead: 0.001
     sensitivity: 1000
@@ -887,12 +887,12 @@ InputManager:
     joyNum: 0
   - serializedVersion: 3
     m_Name: Lean
-    descriptiveName: 
-    descriptiveNegativeName: 
-    negativeButton: x
-    positiveButton: z
-    altNegativeButton: 
-    altPositiveButton: 
+    descriptiveName:
+    descriptiveNegativeName:
+    negativeButton: q
+    positiveButton: e
+    altNegativeButton:
+    altPositiveButton:
     gravity: 1000
     dead: 0.001
     sensitivity: 1000

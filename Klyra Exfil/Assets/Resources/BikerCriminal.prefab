@@ -1371,7 +1371,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Opsive.UltimateCharacterController::Opsive.UltimateCharacterController.Inventory.Inventory
   m_AutoSpawnDestroyRuntimeCharacterItems: 1
-  m_AutoRemoveCharacterItems: 1
+  m_AutoRemoveCharacterItems: 0
   m_UnequipAllOnDeath: 0
   m_LoadDefaultLoadoutOnRespawn: 0
   m_UnequippedStateName: Unequipped
@@ -1405,9 +1405,9 @@ MonoBehaviour:
     m_ItemSetName: 
     m_Index: 0
   m_DefaultLoadout:
-  - ItemDefinition: {fileID: 4021143365342896098, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
+  - ItemDefinition: {fileID: 3539424784704282294, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
     Amount: 1
-  - ItemDefinition: {fileID: 4906038157856389806, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
+  - ItemDefinition: {fileID: 8192739638633277009, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
     Amount: 1000
   m_RemoveExceptions: []
 --- !u!114 &5619972302477162669
@@ -1448,8 +1448,8 @@ MonoBehaviour:
       m_Default: 1
     m_Name: Health
     m_MinValue: 0
-    m_MaxValue: 100
-    m_Value: 100
+    m_MaxValue: 50
+    m_Value: 50
     m_AutoUpdateValueType: 0
     m_UpdateWhenInactive: 0
     m_AutoUpdateStartDelay: 1
@@ -1718,7 +1718,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6460341560053392897}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2a04c4f909a20ad489448a810343f4bf, type: 3}
   m_Name: 
@@ -1740,6 +1740,9 @@ MonoBehaviour:
   combatDistance: 10
   fireRate: 0.5
   accuracy: 0.7
+  useCover: 1
+  coverSearchRange: 15
+  minCoverHeight: 0.8
   complianceChance: 0.3
   complianceDuration: 5
   voiceCommandRange: 10

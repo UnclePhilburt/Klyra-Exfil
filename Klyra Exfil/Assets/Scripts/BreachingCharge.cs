@@ -145,12 +145,22 @@ public class BreachingCharge : MonoBehaviourPun
         Debug.Log("BOOM! Breaching charge detonated!");
 
         // Sync detonation over network
-        if (PhotonNetwork.IsConnected && photonView != null && photonView.ViewID != 0)
+        if (PhotonNetwork.IsConnected && photonView != null)
         {
-            photonView.RPC("RPC_Detonate", RpcTarget.All);
+            if (photonView.ViewID != 0)
+            {
+                photonView.RPC("RPC_Detonate", RpcTarget.All);
+            }
+            else
+            {
+                // ViewID not assigned yet - shouldn't happen with armed charges, but handle it
+                Debug.LogWarning("Breaching charge detonating before PhotonView initialized! Forcing local detonation.");
+                DoDetonate();
+            }
         }
         else
         {
+            // Single-player or no network
             DoDetonate();
         }
     }

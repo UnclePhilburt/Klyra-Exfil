@@ -1,0 +1,206 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &252430152650866433
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 4064683449199569283}
+    m_Modifications:
+    - target: {fileID: 197256, guid: 7cbb9ead96f471c4cb51d84f92bb1ab1, type: 3}
+      propertyPath: m_Name
+      value: SM_Wep_Flashbang_Base_01
+      objectReference: {fileID: 0}
+    - target: {fileID: 446470, guid: 7cbb9ead96f471c4cb51d84f92bb1ab1, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.031
+      objectReference: {fileID: 0}
+    - target: {fileID: 446470, guid: 7cbb9ead96f471c4cb51d84f92bb1ab1, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.01768
+      objectReference: {fileID: 0}
+    - target: {fileID: 446470, guid: 7cbb9ead96f471c4cb51d84f92bb1ab1, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.0378
+      objectReference: {fileID: 0}
+    - target: {fileID: 446470, guid: 7cbb9ead96f471c4cb51d84f92bb1ab1, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 446470, guid: 7cbb9ead96f471c4cb51d84f92bb1ab1, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 446470, guid: 7cbb9ead96f471c4cb51d84f92bb1ab1, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 446470, guid: 7cbb9ead96f471c4cb51d84f92bb1ab1, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 446470, guid: 7cbb9ead96f471c4cb51d84f92bb1ab1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 446470, guid: 7cbb9ead96f471c4cb51d84f92bb1ab1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 446470, guid: 7cbb9ead96f471c4cb51d84f92bb1ab1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 7cbb9ead96f471c4cb51d84f92bb1ab1, type: 3}
+--- !u!4 &252430152651042567 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 446470, guid: 7cbb9ead96f471c4cb51d84f92bb1ab1, type: 3}
+  m_PrefabInstance: {fileID: 252430152650866433}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &4064412281145203527
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1315042273151818, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+      propertyPath: m_Name
+      value: FlashbangProjectilePun
+      objectReference: {fileID: 0}
+    - target: {fileID: 4250028106724036, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+      propertyPath: m_RootOrder
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4250028106724036, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4250028106724036, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4250028106724036, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4250028106724036, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4250028106724036, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4250028106724036, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4250028106724036, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4250028106724036, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4250028106724036, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4250028106724036, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 114803698631390852, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+      propertyPath: m_ImpactLayers.m_Bits
+      value: 3422552321
+      objectReference: {fileID: 0}
+    - target: {fileID: 114803698631390852, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+      propertyPath: m_StickyLayers.m_Bits
+      value: 201326851
+      objectReference: {fileID: 0}
+    - target: {fileID: 114803698631390852, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+      propertyPath: m_DefaultImpactDamageData.m_LayerMask.m_Bits
+      value: 2348810531
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: 114803698631390852, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+    m_RemovedGameObjects:
+    - {fileID: 2213133034730390085, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 4250028106724036, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 252430152651042567}
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1315042273151818, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5545966024080991380}
+    - targetCorrespondingSourceObject: {fileID: 1315042273151818, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5619514997588438428}
+  m_SourcePrefab: {fileID: 100100000, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+--- !u!1 &4063123627202793485 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1315042273151818, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+  m_PrefabInstance: {fileID: 4064412281145203527}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &5545966024080991380
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4063123627202793485}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa584fbee541324448dd18d8409c7a41, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ObservedComponentsFoldoutOpen: 1
+  Group: 0
+  prefixField: -1
+  Synchronization: 3
+  OwnershipTransfer: 0
+  observableSearch: 2
+  ObservedComponents: []
+  sceneViewId: 0
+  InstantiationId: 0
+  isRuntimeInstantiated: 0
+--- !u!114 &5619514997588438428
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4063123627202793485}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98ed3e26679402a44843aece78d51a67, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FlashbangGrenade
+  fuseTime: 1.5
+  effectRadius: 10
+  maxFlashDuration: 8
+  minFlashDuration: 3
+  maxDeafenDuration: 4
+  obstacleMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  flashEffect: {fileID: 127842, guid: a98a28f48fb0baf49a6f4b5cbf708902, type: 3}
+  flashLight: {fileID: 0}
+  flashLightDuration: 0.3
+  flashLightIntensity: 10
+  bangSound: {fileID: 8300000, guid: aece64eeccd773a4baa65a65940dcdbf, type: 3}
+  pinSound: {fileID: 0}
+--- !u!4 &4064683449199569283 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4250028106724036, guid: 47daba230e0228c499c8fcbe81ced468, type: 3}
+  m_PrefabInstance: {fileID: 4064412281145203527}
+  m_PrefabAsset: {fileID: 0}

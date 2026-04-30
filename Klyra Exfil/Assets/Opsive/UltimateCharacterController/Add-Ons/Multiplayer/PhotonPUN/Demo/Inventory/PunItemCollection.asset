@@ -1,6 +1,72 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-5310187782341302983
+--- !u!114 &-8965433290464924485
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e74c32144565264eb86dc7514aca7f7, type: 3}
+  m_Name: .45 Cal Ammo
+  m_EditorClassIdentifier: Opsive.UltimateCharacterController::Opsive.UltimateCharacterController.Inventory.ItemType
+  m_ID: 31
+  m_CategoryIDs: bf70bfd8
+  m_Capacity: 2147483647
+  m_Prefabs: []
+--- !u!114 &-3411510323404076407
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e74c32144565264eb86dc7514aca7f7, type: 3}
+  m_Name: .45 Cal Pistol
+  m_EditorClassIdentifier: Opsive.UltimateCharacterController::Opsive.UltimateCharacterController.Inventory.ItemType
+  m_ID: 27
+  m_CategoryIDs: bf70bfd8
+  m_Capacity: 2147483647
+  m_Prefabs:
+  - {fileID: 7571074784083453930, guid: 46aeac79c8a2fa24bb9ae2498f70e43e, type: 3}
+--- !u!114 &-1868855479715034983
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e74c32144565264eb86dc7514aca7f7, type: 3}
+  m_Name: 'Breach Charge '
+  m_EditorClassIdentifier: Opsive.UltimateCharacterController::Opsive.UltimateCharacterController.Inventory.ItemType
+  m_ID: 32
+  m_CategoryIDs: bf70bfd8
+  m_Capacity: 2147483647
+  m_Prefabs:
+  - {fileID: 1738598003568112, guid: c129097ff8e354e43be1e5ef3f514877, type: 3}
+--- !u!114 &-1544054919566903698
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e74c32144565264eb86dc7514aca7f7, type: 3}
+  m_Name: 5.56 Ammo
+  m_EditorClassIdentifier: Opsive.UltimateCharacterController::Opsive.UltimateCharacterController.Inventory.ItemType
+  m_ID: 29
+  m_CategoryIDs: bf70bfd8
+  m_Capacity: 2147483647
+  m_Prefabs: []
+--- !u!114 &-1070351463115255372
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -12,11 +78,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e74c32144565264eb86dc7514aca7f7, type: 3}
   m_Name: Flashbang
   m_EditorClassIdentifier: Opsive.UltimateCharacterController::Opsive.UltimateCharacterController.Inventory.ItemType
-  m_ID: 27
+  m_ID: 25
   m_CategoryIDs: bf70bfd8c5986f382767c004
   m_Capacity: 2147483647
   m_Prefabs:
-  - {fileID: 4913250935814032891, guid: fd48e0bf7fe38654fb2fbb8e3a16dfb4, type: 3}
+  - {fileID: 4063123627202793485, guid: ba07115d3238c5848a9fbbde0f566e57, type: 3}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -62,12 +128,14 @@ MonoBehaviour:
   - {fileID: 114597926302919460}
   - {fileID: 114719901230668630}
   - {fileID: 114327507680120068}
-  - {fileID: 4021143365342896098}
-  - {fileID: 4906038157856389806}
-  - {fileID: -5310187782341302983}
-  - {fileID: 3539424784704282294}
-  - {fileID: 8192739638633277009}
-  - {fileID: 8646973414647546444}
+  - {fileID: -1070351463115255372}
+  - {fileID: 7475287155718836374}
+  - {fileID: -3411510323404076407}
+  - {fileID: 4709046370269532892}
+  - {fileID: -1544054919566903698}
+  - {fileID: 2064706100624907577}
+  - {fileID: -8965433290464924485}
+  - {fileID: -1868855479715034983}
 --- !u!114 &114038489858704770
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -567,7 +635,40 @@ MonoBehaviour:
   m_Prefabs:
   - {fileID: 4578165332327779886, guid: 38e042536cb5bba4dba0dc269081a1dc, type: 3}
   - {fileID: 1645335493191911543, guid: 00900986bf6249143a13a0e5454b4542, type: 3}
---- !u!114 &3539424784704282294
+--- !u!114 &2064706100624907577
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e74c32144565264eb86dc7514aca7f7, type: 3}
+  m_Name: 9mm Ammo
+  m_EditorClassIdentifier: Opsive.UltimateCharacterController::Opsive.UltimateCharacterController.Inventory.ItemType
+  m_ID: 30
+  m_CategoryIDs: bf70bfd8
+  m_Capacity: 2147483647
+  m_Prefabs: []
+--- !u!114 &4709046370269532892
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e74c32144565264eb86dc7514aca7f7, type: 3}
+  m_Name: MP5
+  m_EditorClassIdentifier: Opsive.UltimateCharacterController::Opsive.UltimateCharacterController.Inventory.ItemType
+  m_ID: 28
+  m_CategoryIDs: bf70bfd8fc68d90d
+  m_Capacity: 2147483647
+  m_Prefabs:
+  - {fileID: 5647291636782234261, guid: 0ab73bae15af4be4a9f3468af796a033, type: 3}
+--- !u!114 &7475287155718836374
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -579,74 +680,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e74c32144565264eb86dc7514aca7f7, type: 3}
   m_Name: M4A1
   m_EditorClassIdentifier: Opsive.UltimateCharacterController::Opsive.UltimateCharacterController.Inventory.ItemType
-  m_ID: 28
+  m_ID: 26
   m_CategoryIDs: bf70bfd8fc68d90d
   m_Capacity: 2147483647
   m_Prefabs:
-  - {fileID: 4816223025249661939, guid: 698c1fbf11b9e4a9ea786bd5e851bf54, type: 3}
---- !u!114 &4021143365342896098
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e74c32144565264eb86dc7514aca7f7, type: 3}
-  m_Name: .45 Cal Pistol
-  m_EditorClassIdentifier: Opsive.UltimateCharacterController::Opsive.UltimateCharacterController.Inventory.ItemType
-  m_ID: 25
-  m_CategoryIDs: bf70bfd8
-  m_Capacity: 2147483647
-  m_Prefabs:
-  - {fileID: 7571074784083453930, guid: 46aeac79c8a2fa24bb9ae2498f70e43e, type: 3}
---- !u!114 &4906038157856389806
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e74c32144565264eb86dc7514aca7f7, type: 3}
-  m_Name: .45 Caliber Ammo
-  m_EditorClassIdentifier: Opsive.UltimateCharacterController::Opsive.UltimateCharacterController.Inventory.ItemType
-  m_ID: 26
-  m_CategoryIDs: bf70bfd8
-  m_Capacity: 2147483647
-  m_Prefabs: []
---- !u!114 &8192739638633277009
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e74c32144565264eb86dc7514aca7f7, type: 3}
-  m_Name: 5.56 Ammo
-  m_EditorClassIdentifier: Opsive.UltimateCharacterController::Opsive.UltimateCharacterController.Inventory.ItemType
-  m_ID: 29
-  m_CategoryIDs: bf70bfd8
-  m_Capacity: 2147483647
-  m_Prefabs: []
---- !u!114 &8646973414647546444
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e74c32144565264eb86dc7514aca7f7, type: 3}
-  m_Name: BreachCharge
-  m_EditorClassIdentifier: Opsive.UltimateCharacterController::Opsive.UltimateCharacterController.Inventory.ItemType
-  m_ID: 30
-  m_CategoryIDs: bf70bfd8
-  m_Capacity: 2147483647
-  m_Prefabs:
-  - {fileID: 1738598003568112, guid: c129097ff8e354e43be1e5ef3f514877, type: 3}
+  - {fileID: 1682007736657899433, guid: 698c1fbf11b9e4a9ea786bd5e851bf54, type: 3}

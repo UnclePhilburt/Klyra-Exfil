@@ -15,9 +15,11 @@ public class DoorRadialMenu : MonoBehaviour
     public Color backgroundColor = new Color(0.05f, 0.05f, 0.08f, 0.95f);
     public Color segmentNormalColor = new Color(0.15f, 0.15f, 0.2f, 0.9f);
     public Color segmentHoverColor = new Color(0.3f, 0.6f, 1f, 1f);
+    public Color segmentDisabledColor = new Color(0.1f, 0.1f, 0.12f, 0.5f);
     public Color centerColor = new Color(0.08f, 0.08f, 0.12f, 1f);
     public Color accentColor = new Color(0.4f, 0.7f, 1f, 1f);
     public Color textColor = Color.white;
+    public Color textDisabledColor = new Color(0.4f, 0.4f, 0.45f, 0.6f);
 
     private bool isMenuOpen = false;
     private float holdTimer = 0f;
@@ -31,6 +33,7 @@ public class DoorRadialMenu : MonoBehaviour
         public string name;
         public float angle;
         public System.Action action;
+        public System.Func<bool> isAvailable; // Returns true if this option can be used
     }
 
     private MenuOption[] menuOptions;
@@ -50,10 +53,10 @@ public class DoorRadialMenu : MonoBehaviour
         // has already run (Unity doesn't guarantee Start ordering).
         menuOptions = new MenuOption[]
         {
-            new MenuOption { name = "OPEN", angle = 45f, action = () => { Debug.Log("[DoorRadialMenu] OPEN selected"); targetDoor?.Toggle(); } },
-            new MenuOption { name = "SNAKE CAM", angle = 135f, action = () => { Debug.Log("[DoorRadialMenu] SNAKE CAM selected"); targetDoor?.GetComponent<DoorSnakeCam>()?.ToggleSnakeCam(); } },
-            new MenuOption { name = "BREACH", angle = 225f, action = () => { Debug.Log("[DoorRadialMenu] BREACH selected"); targetDoor?.Breach(); } },
-            new MenuOption { name = "EXPLOSIVE", angle = 315f, action = () => { Debug.Log("[DoorRadialMenu] EXPLOSIVE selected"); doorInteractable?.PlaceExplosiveCharge(); } }
+            new MenuOption { name = "OPEN", angle = 45f, action = () => { Debug.Log("[DoorRadialMenu] OPEN selected"); targetDoor?.Toggle(); }, isAvailable = () => true },
+            new MenuOption { name = "SNAKE CAM", angle = 135f, action = () => { Debug.Log("[DoorRadialMenu] SNAKE CAM selected"); targetDoor?.GetComponent<DoorSnakeCam>()?.ToggleSnakeCam(); }, isAvailable = () => targetDoor?.GetComponent<DoorSnakeCam>() != null },
+            new MenuOption { name = "BREACH", angle = 225f, action = () => { Debug.Log("[DoorRadialMenu] BREACH selected"); targetDoor?.Breach(); }, isAvailable = () => targetDoor != null && targetDoor.canBeBreach },
+            new MenuOption { name = "EXPLOSIVE", angle = 315f, action = () => { Debug.Log("[DoorRadialMenu] EXPLOSIVE selected"); doorInteractable?.PlaceExplosiveCharge(); }, isAvailable = () => doorInteractable != null && doorInteractable.HasBreachChargeAvailable() }
         };
 
         InitializeGraphics();
@@ -134,7 +137,17 @@ public class DoorRadialMenu : MonoBehaviour
     {
         if (selectedOption >= 0 && selectedOption < menuOptions.Length && !hasExecuted)
         {
-            menuOptions[selectedOption].action?.Invoke();
+            MenuOption option = menuOptions[selectedOption];
+
+            // Check if option is available before executing
+            if (option.isAvailable == null || option.isAvailable())
+            {
+                option.action?.Invoke();
+            }
+            else
+            {
+                Debug.Log($"[DoorRadialMenu] Option '{option.name}' is not available");
+            }
         }
     }
 
@@ -157,13 +170,28 @@ public class DoorRadialMenu : MonoBehaviour
         if (angle < 0) angle += 360f;
 
         float closestDist = float.MaxValue;
+        int closestAvailableOption = 0;
+
         for (int i = 0; i < menuOptions.Length; i++)
         {
+            bool isAvailable = menuOptions[i].isAvailable == null || menuOptions[i].isAvailable();
+
             float angleDiff = Mathf.Abs(Mathf.DeltaAngle(angle, menuOptions[i].angle));
             if (angleDiff < closestDist)
             {
                 closestDist = angleDiff;
-                selectedOption = i;
+
+                // Only select this option if it's available
+                if (isAvailable)
+                {
+                    selectedOption = i;
+                    closestAvailableOption = i;
+                }
+                else
+                {
+                    // Point to unavailable option but don't allow selection
+                    selectedOption = closestAvailableOption;
+                }
             }
         }
     }
@@ -189,10 +217,20 @@ public class DoorRadialMenu : MonoBehaviour
         // Draw segments
         for (int i = 0; i < menuOptions.Length; i++)
         {
+            bool isAvailable = menuOptions[i].isAvailable == null || menuOptions[i].isAvailable();
             bool isSelected = (i == selectedOption);
-            Color segmentColor = isSelected ? segmentHoverColor : segmentNormalColor;
 
-            DrawSegment(center, menuRadius, menuOptions[i].angle, 120f, segmentColor, isSelected);
+            Color segmentColor;
+            if (!isAvailable)
+            {
+                segmentColor = segmentDisabledColor;
+            }
+            else
+            {
+                segmentColor = isSelected ? segmentHoverColor : segmentNormalColor;
+            }
+
+            DrawSegment(center, menuRadius, menuOptions[i].angle, 120f, segmentColor, isSelected && isAvailable);
         }
 
         // Center circle
@@ -203,28 +241,46 @@ public class DoorRadialMenu : MonoBehaviour
         // Draw options
         for (int i = 0; i < menuOptions.Length; i++)
         {
+            bool isAvailable = menuOptions[i].isAvailable == null || menuOptions[i].isAvailable();
             bool isSelected = (i == selectedOption);
 
             float angleRad = menuOptions[i].angle * Mathf.Deg2Rad;
             Vector2 pos = center + new Vector2(Mathf.Cos(angleRad), Mathf.Sin(angleRad)) * menuRadius;
 
             // Option circle background
-            Color optionBg = isSelected ? accentColor : new Color(0.2f, 0.2f, 0.25f, 0.9f);
+            Color optionBg;
+            if (!isAvailable)
+            {
+                optionBg = new Color(0.15f, 0.15f, 0.18f, 0.5f);
+            }
+            else
+            {
+                optionBg = isSelected ? accentColor : new Color(0.2f, 0.2f, 0.25f, 0.9f);
+            }
             DrawCircle(pos, optionSize / 2f, optionBg);
 
             // Inner glow
-            if (isSelected)
+            if (isSelected && isAvailable)
             {
                 DrawCircle(pos, (optionSize / 2f) - 3f, new Color(1f, 1f, 1f, 0.3f));
             }
 
             // Icon circle
-            DrawCircle(pos, (optionSize / 2f) - 5f, new Color(0.1f, 0.1f, 0.15f, 0.95f));
+            Color iconCircleColor = isAvailable ? new Color(0.1f, 0.1f, 0.15f, 0.95f) : new Color(0.08f, 0.08f, 0.1f, 0.4f);
+            DrawCircle(pos, (optionSize / 2f) - 5f, iconCircleColor);
 
             // Text
             GUIStyle textStyle = new GUIStyle(labelStyle);
-            textStyle.fontSize = isSelected ? 18 : 15;
-            textStyle.normal.textColor = isSelected ? Color.white : new Color(0.8f, 0.8f, 0.9f, 1f);
+            if (!isAvailable)
+            {
+                textStyle.fontSize = 15;
+                textStyle.normal.textColor = textDisabledColor;
+            }
+            else
+            {
+                textStyle.fontSize = isSelected ? 18 : 15;
+                textStyle.normal.textColor = isSelected ? Color.white : new Color(0.8f, 0.8f, 0.9f, 1f);
+            }
 
             Rect textRect = new Rect(pos.x - 80f, pos.y - 12f, 160f, 24f);
             GUI.Label(textRect, menuOptions[i].name, textStyle);

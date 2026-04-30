@@ -18,12 +18,31 @@ public class TacticalAI : MonoBehaviourPun
     public AIState currentState = AIState.Patrol;
     public float alertLevel = 0f; // 0 = calm, 1 = fully alert
 
-    [Header("Patrol Settings")]
+    [Header("Movement Settings")]
+    [Tooltip("Movement mode: Patrol (waypoints), Roam (random), or Idle (stationary)")]
+    public MovementMode movementMode = MovementMode.Idle;
+
+    [Header("Patrol Settings (Only if Movement Mode = Patrol)")]
     [Tooltip("Patrol waypoints - will cycle through these")]
     public Transform[] patrolWaypoints;
     [Tooltip("Wait time at each waypoint")]
     public float waypointWaitTime = 3f;
-    [Tooltip("Speed while patrolling")]
+
+    [Header("Roaming Settings (Only if Movement Mode = Roam)")]
+    [Tooltip("How far from spawn point AI can roam")]
+    public float roamRadius = 20f;
+    [Tooltip("Time to wait before picking new roam point (higher = less movement, more Ready or Not style)")]
+    public float roamWaitTime = 15f;
+    [Tooltip("Minimum distance for new roam point")]
+    public float minRoamDistance = 5f;
+    [Tooltip("Max attempts to find valid roam point")]
+    public int maxRoamAttempts = 10;
+    [Tooltip("Chance to move to new spot (0-1). Lower = more stationary")]
+    [Range(0f, 1f)]
+    public float roamChance = 0.3f;
+
+    [Header("Movement Speed")]
+    [Tooltip("Speed while patrolling/roaming")]
     public float patrolSpeed = 1.5f;
 
     [Header("Detection Settings")]
@@ -39,6 +58,20 @@ public class TacticalAI : MonoBehaviourPun
     public float alertIncreaseRate = 2f;
     [Tooltip("How fast alert level decreases when not seeing player")]
     public float alertDecreaseRate = 0.5f;
+    [Tooltip("Check for threats every X seconds (lower = more responsive)")]
+    public float threatCheckInterval = 0.2f;
+
+    [Header("Obstacle Avoidance")]
+    [Tooltip("Distance to check for obstacles in front")]
+    public float obstacleDetectionDistance = 2f;
+    [Tooltip("Number of raycasts to use for obstacle detection (more = better avoidance)")]
+    public int obstacleRayCount = 5;
+    [Tooltip("Width of obstacle detection spread")]
+    public float obstacleDetectionWidth = 1f;
+    [Tooltip("How often to check for obstacles (seconds)")]
+    public float obstacleCheckInterval = 0.3f;
+    [Tooltip("Layer mask for physical obstacles (furniture, walls, etc.) - leave as 'Everything' to detect all objects")]
+    public LayerMask physicalObstacleMask = -1;
 
     [Header("Combat Settings")]
     [Tooltip("Combat movement speed")]
@@ -50,6 +83,22 @@ public class TacticalAI : MonoBehaviourPun
     [Tooltip("Accuracy (0-1)")]
     [Range(0f, 1f)]
     public float accuracy = 0.7f;
+    [Tooltip("Use cover when under fire")]
+    public bool useCover = true;
+    [Tooltip("How far to search for cover")]
+    public float coverSearchRange = 15f;
+    [Tooltip("Minimum cover height")]
+    public float minCoverHeight = 0.8f;
+
+    [Header("Territory Defense")]
+    [Tooltip("Defend territory instead of aggressively pursuing players")]
+    public bool defendTerritory = true;
+    [Tooltip("Max distance from spawn to chase enemies (territory radius)")]
+    public float territoryRadius = 25f;
+    [Tooltip("How far outside territory before returning (gives some chase distance)")]
+    public float maxChaseDistance = 35f;
+    [Tooltip("When outside territory, prioritize returning to territory over chasing")]
+    public bool returnWhenOutsideTerritory = true;
 
     [Header("Voice Line Response")]
     [Tooltip("Chance to comply with voice commands (0-1)")]
@@ -73,9 +122,17 @@ public class TacticalAI : MonoBehaviourPun
     [Header("References")]
     public Transform eyePosition; // For line of sight checks
 
+    [Header("Room Awareness")]
+    [Tooltip("Enable room tracking (requires RoomVolume components)")]
+    public bool enableRoomAwareness = true;
+
     [Header("Debug")]
     [Tooltip("Log a detection summary once per second.")]
     public bool debugDetection = false;
+    [Tooltip("Show AI vision cone and detection rays in scene view")]
+    public bool debugVision = true;
+    [Tooltip("Debug room awareness system")]
+    public bool debugRooms = false;
     private float debugLogTimer = 0f;
 
     // Private state
@@ -98,6 +155,21 @@ public class TacticalAI : MonoBehaviourPun
     private bool isFlashbanged = false;
     private Vector3 lastKnownPlayerPosition;
     private bool hasLastKnownPosition = false;
+    private CoverPoint currentCoverPoint = null;
+    private bool hasValidCover = false;
+    private float lastDamageTime = 0f;
+    private Vector3 spawnPosition;
+    private Vector3 currentRoamTarget;
+    private bool hasRoamTarget = false;
+    private float lastThreatCheckTime = 0f;
+    private float lastObstacleCheckTime = 0f;
+    private bool obstacleAhead = false;
+    private int consecutiveObstacleHits = 0;
+    private AdvancedAICombatTactics advancedTactics;
+
+    // Room awareness
+    private Klyra.AI.RoomVolume currentRoom;
+    private Klyra.AI.RoomVolume lastKnownPlayerRoom;
 
     public enum AIState
     {
@@ -106,6 +178,13 @@ public class TacticalAI : MonoBehaviourPun
         Combat,
         Compliant,
         Flashbanged
+    }
+
+    public enum MovementMode
+    {
+        Patrol,
+        Roam,
+        Idle
     }
 
     void Start()
@@ -139,28 +218,47 @@ public class TacticalAI : MonoBehaviourPun
             navAgent.stoppingDistance = 1f;
         }
 
-        // Start patrol
-        if (patrolWaypoints != null && patrolWaypoints.Length > 0)
-        {
-            SetDestination(patrolWaypoints[0].position);
-        }
+        // Save spawn position for roaming
+        spawnPosition = transform.position;
 
-        // Subscribe to death event
+        // Start movement based on mode
+        if (movementMode == MovementMode.Patrol)
+        {
+            if (patrolWaypoints != null && patrolWaypoints.Length > 0)
+            {
+                SetDestination(patrolWaypoints[0].position);
+            }
+        }
+        else if (movementMode == MovementMode.Roam)
+        {
+            PickNewRoamTarget();
+        }
+        // Idle mode - don't move at start
+
+        // Subscribe to death and damage events
         Opsive.Shared.Events.EventHandler.RegisterEvent<Vector3, Vector3, GameObject>(gameObject, "OnDeath", OnAIDeath);
+        Opsive.Shared.Events.EventHandler.RegisterEvent<float, Vector3, Vector3, GameObject, object, Collider>(gameObject, "OnHealthDamage", OnTakeDamage);
+
+        // Check for advanced tactics component
+        advancedTactics = GetComponent<AdvancedAICombatTactics>();
 
         Debug.Log($"TacticalAI initialized on {gameObject.name}");
     }
 
     void OnDestroy()
     {
-        // Unsubscribe from death event
+        // Unsubscribe from events
         Opsive.Shared.Events.EventHandler.UnregisterEvent<Vector3, Vector3, GameObject>(gameObject, "OnDeath", OnAIDeath);
+        Opsive.Shared.Events.EventHandler.UnregisterEvent<float, Vector3, Vector3, GameObject, object, Collider>(gameObject, "OnHealthDamage", OnTakeDamage);
         if (stunGraph.IsValid()) stunGraph.Destroy();
     }
 
     void OnAIDeath(Vector3 position, Vector3 force, GameObject attacker)
     {
         Debug.Log($"{gameObject.name} died");
+
+        // Release cover if using one
+        ReleaseCover();
 
         // Disable AI
         this.enabled = false;
@@ -172,9 +270,149 @@ public class TacticalAI : MonoBehaviourPun
         }
     }
 
+    /// <summary>
+    /// Called when AI takes damage - makes them immediately engage
+    /// </summary>
+    void OnTakeDamage(float damage, Vector3 position, Vector3 force, GameObject attacker, object attackerObject, Collider hitCollider)
+    {
+        // If we're already dead, flashbanged, or compliant, ignore
+        if (!this.enabled || currentState == AIState.Flashbanged || currentState == AIState.Compliant)
+            return;
+
+        Debug.Log($"{gameObject.name}: TOOK DAMAGE! {damage} from {(attacker != null ? attacker.name : "unknown")}");
+
+        // Record damage time for cover seeking
+        lastDamageTime = Time.time;
+        hasValidCover = false; // Reset cover so we find new cover
+
+        // Notify advanced tactics that we're taking fire
+        if (advancedTactics != null)
+        {
+            advancedTactics.OnTakingFire();
+        }
+
+        // IMMEDIATELY enter combat mode when shot
+        if (attacker != null)
+        {
+            // Find the attacker's aim point for targeting
+            var playerTarget = attacker.GetComponent<PlayerTarget>();
+            if (playerTarget != null && playerTarget.AimPoint != null)
+            {
+                currentTarget = playerTarget.AimPoint;
+                lastKnownPlayerPosition = currentTarget.position;
+                hasLastKnownPosition = true;
+            }
+            else
+            {
+                // Fallback - just target the attacker's transform
+                currentTarget = attacker.transform;
+                lastKnownPlayerPosition = attacker.transform.position;
+                hasLastKnownPosition = true;
+            }
+
+            Debug.Log($"{gameObject.name}: Engaging attacker at {lastKnownPlayerPosition}!");
+
+            // INSTANTLY turn to face the attacker
+            Vector3 directionToAttacker = (attacker.transform.position - transform.position).normalized;
+            directionToAttacker.y = 0; // Keep on horizontal plane
+            if (directionToAttacker != Vector3.zero)
+            {
+                transform.rotation = Quaternion.LookRotation(directionToAttacker);
+                Debug.Log($"{gameObject.name}: INSTANTLY turned to face attacker!");
+            }
+
+            // ALERT TEAMMATES - we're under attack!
+            AlertNearbyAllies(attacker.transform.position);
+
+            TransitionToState(AIState.Combat);
+        }
+        else
+        {
+            // Took damage but don't know from where - investigate the damage position
+            lastKnownPlayerPosition = position;
+            hasLastKnownPosition = true;
+
+            if (currentState != AIState.Combat)
+            {
+                Debug.Log($"{gameObject.name}: Investigating damage source at {position}");
+                TransitionToState(AIState.Investigate);
+            }
+        }
+
+        // Broadcast to nearby AI that we're under attack
+        BroadcastAlert(position, attacker);
+    }
+
+    /// <summary>
+    /// Alert nearby AI when this AI is attacked
+    /// </summary>
+    void BroadcastAlert(Vector3 threatPosition, GameObject attacker)
+    {
+        // Find all other AI within hearing range
+        Collider[] nearbyColliders = Physics.OverlapSphere(transform.position, hearingRange);
+
+        foreach (var col in nearbyColliders)
+        {
+            if (col.gameObject == gameObject) continue; // Skip self
+
+            TacticalAI nearbyAI = col.GetComponent<TacticalAI>();
+            if (nearbyAI != null && nearbyAI.enabled)
+            {
+                nearbyAI.OnAllyUnderAttack(threatPosition, attacker);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Called when a nearby ally is under attack
+    /// </summary>
+    public void OnAllyUnderAttack(Vector3 threatPosition, GameObject attacker)
+    {
+        // If already in combat, ignore
+        if (currentState == AIState.Combat || currentState == AIState.Flashbanged || currentState == AIState.Compliant)
+            return;
+
+        Debug.Log($"{gameObject.name}: Ally under attack! Investigating {threatPosition}");
+
+        lastKnownPlayerPosition = threatPosition;
+        hasLastKnownPosition = true;
+
+        // If we can see the attacker, engage immediately
+        if (attacker != null)
+        {
+            var playerTarget = attacker.GetComponent<PlayerTarget>();
+            Transform targetTransform = playerTarget != null && playerTarget.AimPoint != null
+                ? playerTarget.AimPoint
+                : attacker.transform;
+
+            if (CanSeeTarget(targetTransform))
+            {
+                currentTarget = targetTransform;
+                TransitionToState(AIState.Combat);
+                Debug.Log($"{gameObject.name}: Can see attacker! Engaging!");
+                return;
+            }
+        }
+
+        // Can't see attacker, go investigate
+        TransitionToState(AIState.Investigate);
+    }
+
     void Update()
     {
         if (!photonView.IsMine && PhotonNetwork.IsConnected) return; // Only control on owner's client
+
+        // ALWAYS check for threats FIRST (unless flashbanged or compliant)
+        // This ensures player detection happens before movement decisions
+        if (currentState != AIState.Flashbanged && currentState != AIState.Compliant)
+        {
+            // Check threats at regular intervals for better performance
+            if (Time.time - lastThreatCheckTime >= threatCheckInterval)
+            {
+                CheckForThreats();
+                lastThreatCheckTime = Time.time;
+            }
+        }
 
         // Update based on state
         switch (currentState)
@@ -196,23 +434,63 @@ public class TacticalAI : MonoBehaviourPun
                 break;
         }
 
-        // Always check for threats (unless flashbanged or compliant)
-        if (currentState != AIState.Flashbanged && currentState != AIState.Compliant)
-        {
-            CheckForThreats();
-        }
-
         // Update alert level
         UpdateAlertLevel();
+
+        // Update eye position to follow character's actual facing direction
+        UpdateEyeDirection();
+
+        // Check for obstacles while moving (only during patrol/roam)
+        if (currentState == AIState.Patrol && navAgent != null && navAgent.velocity.magnitude > 0.1f)
+        {
+            if (Time.time - lastObstacleCheckTime >= obstacleCheckInterval)
+            {
+                CheckForObstacles();
+                lastObstacleCheckTime = Time.time;
+            }
+        }
+    }
+
+    void UpdateEyeDirection()
+    {
+        // Make sure eye position rotates with the character
+        if (eyePosition != null && eyePosition.parent == transform)
+        {
+            // Eye should look in the same direction as the character
+            eyePosition.rotation = Quaternion.LookRotation(transform.forward);
+        }
+
+        // Draw vision ray in game view for debugging
+        if (debugVision && eyePosition != null)
+        {
+            Debug.DrawRay(eyePosition.position, eyePosition.forward * sightRange, Color.yellow, 0.1f);
+        }
     }
 
     #region State Updates
 
     void UpdatePatrol()
     {
-        if (patrolWaypoints == null || patrolWaypoints.Length == 0) return;
-
         navAgent.speed = patrolSpeed;
+
+        // Use different behavior based on movement mode
+        if (movementMode == MovementMode.Patrol)
+        {
+            UpdatePatrolWaypoints();
+        }
+        else if (movementMode == MovementMode.Roam)
+        {
+            UpdateRoaming();
+        }
+        else if (movementMode == MovementMode.Idle)
+        {
+            UpdateIdle();
+        }
+    }
+
+    void UpdatePatrolWaypoints()
+    {
+        if (patrolWaypoints == null || patrolWaypoints.Length == 0) return;
 
         // Check if reached waypoint
         if (!navAgent.pathPending && navAgent.remainingDistance <= navAgent.stoppingDistance)
@@ -229,30 +507,287 @@ public class TacticalAI : MonoBehaviourPun
         }
     }
 
+    void UpdateRoaming()
+    {
+        // If obstacle detected multiple times, pick new target
+        if (obstacleAhead && consecutiveObstacleHits > 3)
+        {
+            Debug.LogWarning($"{gameObject.name}: Obstacle blocking path, picking new roam target");
+            PickNewRoamTarget();
+            consecutiveObstacleHits = 0;
+            obstacleAhead = false;
+            return;
+        }
+
+        // If NavMesh agent has no path or path is invalid, get a new target
+        if (navAgent != null && (!navAgent.hasPath || navAgent.pathStatus == UnityEngine.AI.NavMeshPathStatus.PathInvalid))
+        {
+            if (hasRoamTarget)
+            {
+                Debug.LogWarning($"{gameObject.name}: Invalid path to roam target, picking new one");
+                hasRoamTarget = false;
+            }
+        }
+
+        // Check if reached roam target
+        if (hasRoamTarget && !navAgent.pathPending && navAgent.remainingDistance <= navAgent.stoppingDistance)
+        {
+            waypointTimer += Time.deltaTime;
+
+            if (waypointTimer >= roamWaitTime)
+            {
+                // Random chance to move (Ready or Not style - enemies often stay put)
+                if (Random.value < roamChance)
+                {
+                    // Pick new random roam target
+                    PickNewRoamTarget();
+                    waypointTimer = 0f;
+                    consecutiveObstacleHits = 0;
+                }
+                else
+                {
+                    // Stay at current position
+                    waypointTimer = 0f;
+                    Debug.Log($"{gameObject.name}: Chose to stay at current position");
+                }
+            }
+        }
+        else if (!hasRoamTarget)
+        {
+            // No target, pick one
+            PickNewRoamTarget();
+        }
+
+        // Check if stuck (not moving for a while with a target)
+        if (hasRoamTarget && navAgent != null && navAgent.velocity.magnitude < 0.1f && !navAgent.pathPending)
+        {
+            waypointTimer += Time.deltaTime;
+            if (waypointTimer >= 2f) // Stuck for 2 seconds
+            {
+                Debug.LogWarning($"{gameObject.name}: Seems stuck, picking new roam target");
+                PickNewRoamTarget();
+                waypointTimer = 0f;
+                consecutiveObstacleHits = 0;
+            }
+        }
+        else
+        {
+            // Reset timer if moving
+            if (navAgent != null && navAgent.velocity.magnitude > 0.1f)
+            {
+                waypointTimer = 0f;
+            }
+        }
+    }
+
+    void PickNewRoamTarget()
+    {
+        UnityEngine.AI.NavMeshHit hit;
+        UnityEngine.AI.NavMeshPath path = new UnityEngine.AI.NavMeshPath();
+
+        // Try multiple times to find a valid roam point
+        for (int attempt = 0; attempt < maxRoamAttempts; attempt++)
+        {
+            // Pick random point within roam radius from spawn position
+            Vector2 randomCircle = Random.insideUnitCircle * roamRadius;
+            Vector3 randomDirection = spawnPosition + new Vector3(randomCircle.x, 0, randomCircle.y);
+
+            // Make sure it's on the NavMesh
+            if (UnityEngine.AI.NavMesh.SamplePosition(randomDirection, out hit, 5f, UnityEngine.AI.NavMesh.AllAreas))
+            {
+                Vector3 potentialTarget = hit.position;
+
+                // Check distance requirements
+                float distance = Vector3.Distance(transform.position, potentialTarget);
+                if (distance < minRoamDistance)
+                {
+                    continue; // Too close, try again
+                }
+
+                // Check if there's a direct obstacle in the way
+                Vector3 directionToTarget = (potentialTarget - transform.position).normalized;
+                RaycastHit obstacleHit;
+                if (Physics.Raycast(transform.position + Vector3.up * 0.5f, directionToTarget, out obstacleHit, distance, obstacleMask))
+                {
+                    // There's an obstacle in the direct line - try to path around it via NavMesh
+                    // This is fine as long as NavMesh can path around it
+                }
+
+                // IMPORTANT: Validate that we can actually path to this location
+                if (navAgent != null && navAgent.isOnNavMesh)
+                {
+                    if (navAgent.CalculatePath(potentialTarget, path))
+                    {
+                        // Check if the path is complete (not partial)
+                        if (path.status == UnityEngine.AI.NavMeshPathStatus.PathComplete)
+                        {
+                            // Check path length isn't too crazy (no super long detours)
+                            float pathLength = GetPathLength(path);
+                            float straightLineDistance = distance;
+
+                            // If path is more than 2x the straight line distance, it's too convoluted
+                            if (pathLength < straightLineDistance * 2.5f)
+                            {
+                                // Valid path found!
+                                currentRoamTarget = potentialTarget;
+                                hasRoamTarget = true;
+                                SetDestination(currentRoamTarget);
+
+                                Debug.Log($"{gameObject.name}: Roaming to new position {distance:F1}m away, path length {pathLength:F1}m (attempt {attempt + 1})");
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Failed to find valid roam point after all attempts
+        Debug.LogWarning($"{gameObject.name}: Failed to find valid roam target after {maxRoamAttempts} attempts. Staying put.");
+        hasRoamTarget = false;
+
+        // Stay at current position
+        if (navAgent != null && navAgent.isOnNavMesh)
+        {
+            navAgent.ResetPath();
+        }
+    }
+
+    float GetPathLength(UnityEngine.AI.NavMeshPath path)
+    {
+        float length = 0f;
+        if (path.corners.Length < 2) return 0f;
+
+        for (int i = 1; i < path.corners.Length; i++)
+        {
+            length += Vector3.Distance(path.corners[i - 1], path.corners[i]);
+        }
+        return length;
+    }
+
+    void UpdateIdle()
+    {
+        // Ready or Not style - AI just stands still and watches
+        // Stop any movement
+        if (navAgent != null && navAgent.hasPath)
+        {
+            navAgent.ResetPath();
+        }
+
+        // Slowly look around (scanning for threats)
+        waypointTimer += Time.deltaTime;
+        if (waypointTimer >= Random.Range(4f, 8f)) // Random interval for realism
+        {
+            // Rotate slightly to look around
+            float randomYaw = Random.Range(-45f, 45f);
+            Vector3 newForward = Quaternion.Euler(0, randomYaw, 0) * transform.forward;
+
+            if (characterLocomotion != null)
+            {
+                Quaternion targetRot = Quaternion.LookRotation(newForward);
+                characterLocomotion.SetRotation(targetRot, false);
+            }
+            else
+            {
+                transform.rotation = Quaternion.LookRotation(newForward);
+            }
+
+            waypointTimer = 0f;
+        }
+    }
+
     void UpdateInvestigate()
     {
-        navAgent.speed = combatSpeed;
+        navAgent.speed = combatSpeed * 0.7f; // Move slower when investigating (more tactical)
 
-        // Go to last known position
-        if (hasLastKnownPosition)
+        // If we have cover, move to it first, then investigate from there
+        if (hasValidCover && currentCoverPoint != null)
         {
-            SetDestination(lastKnownPlayerPosition);
+            Vector3 coverPos = currentCoverPoint.GetCoverPosition();
+            float distanceToCover = Vector3.Distance(transform.position, coverPos);
 
-            // If reached investigation point and no target, return to patrol
-            if (!navAgent.pathPending && navAgent.remainingDistance <= navAgent.stoppingDistance)
+            if (distanceToCover > 1f)
             {
-                if (currentTarget == null)
+                // Still moving to cover
+                SetDestination(coverPos);
+                return;
+            }
+            else
+            {
+                // At cover, now investigate from here
+                SetDestination(transform.position); // Hold position
+
+                // Look toward threat area
+                if (hasLastKnownPosition)
+                {
+                    LookAtTarget(lastKnownPlayerPosition);
+                }
+
+                // After some time at cover, return to patrol
+                waypointTimer += Time.deltaTime;
+                if (waypointTimer >= 10f) // Wait 10 seconds in cover
                 {
                     Debug.Log($"{gameObject.name}: Investigation complete, returning to patrol");
+                    ReleaseCover();
                     TransitionToState(AIState.Patrol);
                     hasLastKnownPosition = false;
+                    waypointTimer = 0f;
                 }
             }
         }
         else
         {
-            // No position to investigate, return to patrol
-            TransitionToState(AIState.Patrol);
+            // No cover, move cautiously to last known position
+            if (hasLastKnownPosition)
+            {
+                SetDestination(lastKnownPlayerPosition);
+
+                // If reached investigation point and no target, search the area
+                if (!navAgent.pathPending && navAgent.remainingDistance <= navAgent.stoppingDistance)
+                {
+                    if (currentTarget == null)
+                    {
+                        // SEARCH PATTERN: Look around and check nearby positions
+                        waypointTimer += Time.deltaTime;
+
+                        if (waypointTimer < 3f)
+                        {
+                            // First 3 seconds: Look around 360 degrees
+                            float lookAngle = (waypointTimer / 3f) * 360f;
+                            Vector3 lookDir = Quaternion.Euler(0, lookAngle, 0) * Vector3.forward;
+                            LookAtTarget(transform.position + lookDir * 5f);
+                        }
+                        else if (waypointTimer < 8f)
+                        {
+                            // Next 5 seconds: Check random nearby positions (might be hiding)
+                            if (waypointTimer % 2f < 0.1f) // Every 2 seconds
+                            {
+                                Vector3 searchOffset = new Vector3(
+                                    Random.Range(-3f, 3f),
+                                    0f,
+                                    Random.Range(-3f, 3f)
+                                );
+                                Vector3 searchPosition = lastKnownPlayerPosition + searchOffset;
+                                SetDestination(searchPosition);
+                                Debug.Log($"{gameObject.name}: Searching nearby position at {searchPosition}");
+                            }
+                        }
+                        else
+                        {
+                            // After 8 seconds of searching, give up
+                            Debug.Log($"{gameObject.name}: Investigation complete, nothing found. Returning to patrol");
+                            TransitionToState(AIState.Patrol);
+                            hasLastKnownPosition = false;
+                            waypointTimer = 0f;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // No position to investigate, return to patrol
+                TransitionToState(AIState.Patrol);
+            }
         }
     }
 
@@ -272,27 +807,270 @@ public class TacticalAI : MonoBehaviourPun
             return;
         }
 
+        // CHECK FOR TACTICAL RETREAT - wounded AI should fall back
+        if (ShouldTacticalRetreat())
+        {
+            // Move to nearest cover or back toward spawn
+            Vector3 retreatPosition = spawnPosition;
+
+            // Try to find cover to retreat to
+            if (useCover)
+            {
+                CoverPoint nearCover = FindNearestCover();
+                if (nearCover != null)
+                {
+                    retreatPosition = nearCover.transform.position;
+                    Debug.Log($"{gameObject.name}: Retreating to cover at {retreatPosition}!");
+                }
+            }
+
+            // Move toward retreat position
+            SetDestination(retreatPosition);
+            navAgent.speed = combatSpeed * 1.2f; // Move faster when retreating wounded
+
+            // Face the enemy and shoot while backing up (fighting retreat)
+            LookAtTarget(currentTarget.position);
+
+            fireTimer += Time.deltaTime;
+            if (fireTimer >= fireRate * 1.5f) // Slower fire while retreating
+            {
+                TryShootTarget();
+                fireTimer = 0f;
+            }
+
+            return; // Skip normal combat behavior
+        }
+
+        // CHECK IF FALLBACK SYSTEM IS ACTIVE - if so, let it control movement
+        var fallbackSystem = GetComponent<Klyra.AI.AIFallbackSystem>();
+        if (fallbackSystem != null && fallbackSystem.IsFallingBack())
+        {
+            // Fallback system is controlling movement - just handle shooting
+            LookAtTarget(currentTarget.position);
+
+            // Shoot less frequently while falling back (suppressive fire)
+            fireTimer += Time.deltaTime;
+            if (fireTimer >= fireRate * 2f) // Slower fire rate while retreating
+            {
+                TryShootTarget();
+                fireTimer = 0f;
+            }
+            return; // Let fallback system handle movement
+        }
+
+        // TERRITORY DEFENSE CHECK
+        float distanceFromSpawn = Vector3.Distance(transform.position, spawnPosition);
+        bool outsideTerritory = distanceFromSpawn > territoryRadius;
+        bool tooFarFromTerritory = distanceFromSpawn > maxChaseDistance;
+
+        if (defendTerritory && tooFarFromTerritory && returnWhenOutsideTerritory)
+        {
+            // Too far from territory - return to defensive position
+            if (debugDetection)
+            {
+                Debug.Log($"{gameObject.name}: Too far from territory ({distanceFromSpawn:F1}m), returning to defend spawn area");
+            }
+
+            // Move back towards spawn position
+            Vector3 returnPosition = Vector3.MoveTowards(transform.position, spawnPosition, 10f);
+            SetDestination(returnPosition);
+
+            // Still shoot at target while backing up (defensive fire)
+            LookAtTarget(currentTarget.position);
+            fireTimer += Time.deltaTime;
+            if (fireTimer >= fireRate * 1.5f) // Slower fire while retreating
+            {
+                TryShootTarget();
+                fireTimer = 0f;
+            }
+
+            // If we can't see target anymore, go back to patrol
+            if (!CanSeeTarget(currentTarget))
+            {
+                currentTarget = null;
+                TransitionToState(AIState.Patrol);
+            }
+
+            return;
+        }
+
         navAgent.speed = combatSpeed;
 
-        // Move to combat distance
+        // Check if we should seek cover
+        // - Recently took damage (within 3 seconds)
+        // - OR advanced tactics wants us to seek cover
+        bool shouldSeekCover = useCover && (Time.time - lastDamageTime < 3f);
+
+        // If we have advanced tactics and no cover yet, let it decide when to seek
+        if (useCover && !hasValidCover && advancedTactics == null)
+        {
+            // No advanced tactics - use simple cover seeking (always seek cover in combat)
+            shouldSeekCover = true;
+        }
+
         float distanceToTarget = Vector3.Distance(transform.position, currentTarget.position);
 
-        if (distanceToTarget > combatDistance + 2f)
+        if (shouldSeekCover && !hasValidCover)
         {
-            // Too far, move closer
-            SetDestination(currentTarget.position);
+            // Find cover using manual cover points
+            // If defending territory, prioritize cover within territory
+            CoverPoint cover;
+            if (defendTerritory && territoryRadius > 0f)
+            {
+                cover = CoverPoint.FindBestCover(transform.position, currentTarget.position, coverSearchRange, spawnPosition, territoryRadius);
+            }
+            else
+            {
+                cover = CoverPoint.FindBestCover(transform.position, currentTarget.position, coverSearchRange);
+            }
+
+            if (cover != null && cover.Reserve())
+            {
+                // Release previous cover if any
+                if (currentCoverPoint != null)
+                {
+                    currentCoverPoint.Release();
+                }
+
+                currentCoverPoint = cover;
+                hasValidCover = true;
+
+                float coverDistFromSpawn = Vector3.Distance(cover.transform.position, spawnPosition);
+                bool coverInTerritory = coverDistFromSpawn <= territoryRadius;
+
+                if (debugDetection && defendTerritory)
+                {
+                    Debug.Log($"{gameObject.name}: Moving to cover point {cover.name} ({(coverInTerritory ? "INSIDE" : "outside")} territory)");
+                }
+                else
+                {
+                    Debug.Log($"{gameObject.name}: Moving to cover point {cover.name}");
+                }
+            }
         }
-        else if (distanceToTarget < combatDistance - 2f)
+
+        // Move to cover or combat position
+        if (hasValidCover && currentCoverPoint != null)
         {
-            // Too close, back up
-            Vector3 retreatPosition = transform.position + (transform.position - currentTarget.position).normalized * 5f;
-            SetDestination(retreatPosition);
+            // Move to cover
+            Vector3 coverPos = currentCoverPoint.GetCoverPosition();
+            float distanceToCover = Vector3.Distance(transform.position, coverPos);
+
+            if (distanceToCover > 1f)
+            {
+                // Still moving to cover - prioritize this over combat positioning
+                SetDestination(coverPos);
+
+                if (advancedTactics != null && advancedTactics.debugTactics && Time.frameCount % 60 == 0)
+                {
+                    Debug.Log($"{gameObject.name}: Moving to cover {currentCoverPoint.name} - {distanceToCover:F1}m away");
+                }
+            }
+            else
+            {
+                // At cover, hold position and face protected direction
+                SetDestination(transform.position);
+
+                if (advancedTactics != null && advancedTactics.debugTactics && Time.frameCount % 120 == 0)
+                {
+                    Debug.Log($"{gameObject.name}: At cover {currentCoverPoint.name} - holding position");
+                }
+
+                // Clear cover after a while so we can reposition if needed
+                // Only clear if NOT using advanced tactics (which handles relocation)
+                if (advancedTactics == null && Time.time - lastDamageTime > 10f)
+                {
+                    if (currentCoverPoint != null)
+                    {
+                        currentCoverPoint.Release();
+                        currentCoverPoint = null;
+                    }
+                    hasValidCover = false;
+                }
+            }
         }
         else
         {
-            // Good distance, stop moving — setting destination to our current
-            // position makes the pathfinding ability arrive immediately.
-            SetDestination(transform.position);
+            // Normal combat movement (no cover)
+            if (defendTerritory && outsideTerritory)
+            {
+                // Outside territory but not too far - prefer backing towards spawn
+                Vector3 defensivePosition = Vector3.Lerp(transform.position, spawnPosition, 0.3f);
+                SetDestination(defensivePosition);
+
+                if (debugDetection && Time.frameCount % 120 == 0)
+                {
+                    Debug.Log($"{gameObject.name}: Outside territory, taking defensive position closer to spawn");
+                }
+            }
+            else if (distanceToTarget > combatDistance + 2f)
+            {
+                // Too far - but if defending territory, don't chase aggressively
+                if (defendTerritory)
+                {
+                    // Only move if target is within territory or close to it
+                    float targetDistFromSpawn = Vector3.Distance(currentTarget.position, spawnPosition);
+                    if (targetDistFromSpawn <= territoryRadius + 5f)
+                    {
+                        // Target near territory, move to engage
+                        SetDestination(currentTarget.position);
+                    }
+                    else
+                    {
+                        // Target far from territory, hold position and shoot
+                        SetDestination(transform.position);
+
+                        if (debugDetection && Time.frameCount % 120 == 0)
+                        {
+                            Debug.Log($"{gameObject.name}: Target outside territory, holding defensive position");
+                        }
+                    }
+                }
+                else
+                {
+                    // Not defending territory, chase normally
+                    SetDestination(currentTarget.position);
+                }
+            }
+            else if (distanceToTarget < combatDistance - 2f)
+            {
+                // Too close, back up with random lateral movement
+                Vector3 retreatDirection = (transform.position - currentTarget.position).normalized;
+
+                // Add random strafe to make movement unpredictable
+                Vector3 strafeDirection = Vector3.Cross(retreatDirection, Vector3.up) * Random.Range(-1f, 1f);
+                Vector3 movement = (retreatDirection + strafeDirection * 0.3f).normalized;
+
+                // If defending territory, back up towards spawn
+                if (defendTerritory)
+                {
+                    Vector3 towardsSpawn = (spawnPosition - transform.position).normalized;
+                    retreatDirection = Vector3.Lerp(retreatDirection, towardsSpawn, 0.4f).normalized;
+                }
+
+                Vector3 retreatPosition = transform.position + movement * 5f;
+                SetDestination(retreatPosition);
+            }
+            else
+            {
+                // Good distance - occasionally strafe left/right for unpredictability
+                if (Random.value < 0.3f) // 30% chance per frame to be strafing
+                {
+                    Vector3 toCombatTarget = (currentTarget.position - transform.position).normalized;
+                    Vector3 strafeRight = Vector3.Cross(toCombatTarget, Vector3.up);
+
+                    // Random strafe direction
+                    float strafeDir = Random.value > 0.5f ? 1f : -1f;
+                    Vector3 strafePosition = transform.position + strafeRight * strafeDir * 3f;
+
+                    SetDestination(strafePosition);
+                }
+                else
+                {
+                    // Hold position
+                    SetDestination(transform.position);
+                }
+            }
         }
 
         // Face target
@@ -340,25 +1118,166 @@ public class TacticalAI : MonoBehaviourPun
 
     #endregion
 
+    #region Obstacle Avoidance
+
+    void CheckForObstacles()
+    {
+        if (navAgent == null || eyePosition == null) return;
+
+        obstacleAhead = false;
+
+        // Use the character's movement direction, not just forward
+        Vector3 moveDirection = navAgent.velocity.normalized;
+        if (moveDirection.magnitude < 0.1f)
+        {
+            moveDirection = transform.forward;
+        }
+
+        // Check at multiple heights: low (ankles), middle (waist), and high (chest)
+        float[] heights = new float[] { 0.2f, 0.9f, 1.5f };
+
+        foreach (float height in heights)
+        {
+            // Cast multiple rays in a spread pattern to detect obstacles
+            for (int i = 0; i < obstacleRayCount; i++)
+            {
+                float angle = 0f;
+                if (obstacleRayCount > 1)
+                {
+                    // Spread rays across the detection width
+                    float t = i / (float)(obstacleRayCount - 1); // 0 to 1
+                    angle = Mathf.Lerp(-30f, 30f, t); // -30 to +30 degrees
+                }
+
+                Vector3 rayDirection = Quaternion.Euler(0, angle, 0) * moveDirection;
+                Vector3 rayStart = transform.position + Vector3.up * height;
+
+                // Cast ray forward (use physical obstacle mask, not vision obstacle mask)
+                RaycastHit hit;
+                if (Physics.Raycast(rayStart, rayDirection, out hit, obstacleDetectionDistance, physicalObstacleMask))
+                {
+                    // Hit something!
+                    obstacleAhead = true;
+                    consecutiveObstacleHits++;
+
+                    if (debugDetection)
+                    {
+                        Debug.Log($"{gameObject.name}: Obstacle detected ahead at height {height}m: {hit.collider.name} at {hit.distance:F2}m");
+                        Debug.DrawRay(rayStart, rayDirection * hit.distance, Color.red, obstacleCheckInterval);
+                    }
+                    return; // Stop checking once we find an obstacle
+                }
+                else
+                {
+                    if (debugDetection)
+                    {
+                        Color debugColor = height < 0.5f ? Color.cyan : (height < 1.2f ? Color.green : Color.yellow);
+                        Debug.DrawRay(rayStart, rayDirection * obstacleDetectionDistance, debugColor, obstacleCheckInterval);
+                    }
+                }
+            }
+        }
+
+        if (!obstacleAhead)
+        {
+            consecutiveObstacleHits = 0;
+        }
+    }
+
+    #endregion
+
     #region Detection
+
+    /// <summary>
+    /// Called when AI hears a gunshot
+    /// </summary>
+    public void OnGunshotHeard(Vector3 soundPosition, GameObject shooter)
+    {
+        // If already in combat, flashbanged, or compliant, ignore
+        if (currentState == AIState.Combat || currentState == AIState.Flashbanged || currentState == AIState.Compliant)
+            return;
+
+        float distance = Vector3.Distance(transform.position, soundPosition);
+
+        // Only react if within hearing range
+        if (distance > hearingRange) return;
+
+        Debug.Log($"{gameObject.name}: Heard gunshot {distance:F1}m away!");
+
+        lastKnownPlayerPosition = soundPosition;
+        hasLastKnownPosition = true;
+
+        // IMMEDIATELY seek cover when hearing gunshots (Ready or Not style)
+        if (useCover)
+        {
+            SeekNearestCover(soundPosition);
+        }
+
+        // If we can see the shooter, engage
+        if (shooter != null)
+        {
+            var playerTarget = shooter.GetComponent<PlayerTarget>();
+            Transform targetTransform = playerTarget != null && playerTarget.AimPoint != null
+                ? playerTarget.AimPoint
+                : shooter.transform;
+
+            if (CanSeeTarget(targetTransform))
+            {
+                currentTarget = targetTransform;
+                TransitionToState(AIState.Combat);
+                Debug.Log($"{gameObject.name}: Saw the shooter! Engaging!");
+                return;
+            }
+        }
+
+        // Can't see shooter, go investigate the sound (from cover if possible)
+        TransitionToState(AIState.Investigate);
+    }
 
     void CheckForThreats()
     {
         var players = PlayerTarget.All;
 
+        if (debugDetection)
+        {
+            Debug.Log($"[AI:{name}] CheckForThreats: Found {players.Count} PlayerTarget(s) in scene");
+        }
+
+        if (players.Count == 0)
+        {
+            if (debugDetection) Debug.LogWarning($"[AI:{name}] NO PLAYERS FOUND! Make sure player has PlayerTarget component!");
+            return;
+        }
+
         bool shouldLog = debugDetection && (Time.time - debugLogTimer) >= 1f;
         if (shouldLog)
         {
             debugLogTimer = Time.time;
-            Debug.Log($"[AI:{name}] state={currentState} playersFound={players.Count} eyeFwd={eyePosition.forward} aiFwd={transform.forward}", this);
+            Debug.Log($"[AI:{name}] state={currentState} playersFound={players.Count} eyePos={eyePosition.position} eyeFwd={eyePosition.forward} aiFwd={transform.forward}", this);
         }
 
         for (int i = 0; i < players.Count; i++)
         {
             var player = players[i];
-            if (player == null || player.gameObject == gameObject) continue;
+            if (player == null)
+            {
+                if (debugDetection) Debug.LogWarning($"[AI:{name}] Player {i} is NULL!");
+                continue;
+            }
+
+            if (player.gameObject == gameObject)
+            {
+                if (debugDetection) Debug.Log($"[AI:{name}] Skipping self");
+                continue;
+            }
 
             Transform aim = player.AimPoint;
+            if (aim == null)
+            {
+                if (debugDetection) Debug.LogWarning($"[AI:{name}] Player {player.name} has NULL AimPoint!");
+                continue;
+            }
+
             float distance = Vector3.Distance(transform.position, aim.position);
 
             if (shouldLog)
@@ -367,34 +1286,79 @@ public class TacticalAI : MonoBehaviourPun
                 float angle = Vector3.Angle(eyePosition.forward, dir);
                 bool losBlocked = Physics.Raycast(eyePosition.position, dir, distance, obstacleMask);
                 Debug.Log($"[AI:{name}]  -> player={player.name} dist={distance:F1}/{sightRange} angle={angle:F1}/{fieldOfView/2f} losBlocked={losBlocked} obstacleMask={obstacleMask.value}", this);
+
+                // Draw a debug ray to the player
+                Debug.DrawLine(eyePosition.position, aim.position, losBlocked ? Color.red : Color.green, 1f);
             }
 
-            if (distance <= sightRange && CanSeeTarget(aim))
+            // CLOSE RANGE DETECTION: If player is very close (3m), detect them regardless of FOV
+            // This simulates peripheral vision and noticing movement right next to you
+            if (distance <= 3f)
+            {
+                if (debugDetection)
+                {
+                    Debug.Log($"[AI:{name}] CLOSE RANGE DETECTION! Player {player.name} is only {distance:F1}m away - detecting regardless of FOV!");
+                }
+                OnPlayerDetected(aim);
+                lastKnownPlayerPosition = aim.position;
+                hasLastKnownPosition = true;
+                UpdatePlayerRoom(aim);
+            }
+            // NORMAL DETECTION: Check FOV and line of sight
+            else if (distance <= sightRange && CanSeeTarget(aim))
             {
                 OnPlayerDetected(aim);
                 lastKnownPlayerPosition = aim.position;
                 hasLastKnownPosition = true;
+
+                // Update player's room
+                UpdatePlayerRoom(aim);
             }
         }
     }
 
     bool CanSeeTarget(Transform target)
     {
+        if (eyePosition == null || target == null) return false;
+
         Vector3 directionToTarget = (target.position - eyePosition.position).normalized;
         float angleToTarget = Vector3.Angle(eyePosition.forward, directionToTarget);
+        float distanceToTarget = Vector3.Distance(eyePosition.position, target.position);
 
-        if (angleToTarget <= fieldOfView / 2f)
+        // TEMP DEBUG: Always log when checking vision
+        if (debugDetection)
         {
-            float distanceToTarget = Vector3.Distance(eyePosition.position, target.position);
-
-            // Line of sight check
-            if (!Physics.Raycast(eyePosition.position, directionToTarget, distanceToTarget, obstacleMask))
-            {
-                return true;
-            }
+            Debug.Log($"[{name}] CanSeeTarget check: angle={angleToTarget:F1}° (max={fieldOfView/2f}°) dist={distanceToTarget:F1}m (max={sightRange}m)");
         }
 
-        return false;
+        // Check angle first
+        if (angleToTarget > fieldOfView / 2f)
+        {
+            if (debugDetection) Debug.Log($"[{name}] FAILED: Target outside FOV ({angleToTarget:F1}° > {fieldOfView/2f}°)");
+            return false;
+        }
+
+        // Check distance
+        if (distanceToTarget > sightRange)
+        {
+            if (debugDetection) Debug.Log($"[{name}] FAILED: Target too far ({distanceToTarget:F1}m > {sightRange}m)");
+            return false;
+        }
+
+        // Line of sight check
+        RaycastHit hit;
+        if (Physics.Raycast(eyePosition.position, directionToTarget, out hit, distanceToTarget, obstacleMask))
+        {
+            if (debugDetection)
+            {
+                Debug.Log($"[{name}] FAILED: Line of sight blocked by {hit.collider.name} on layer {LayerMask.LayerToName(hit.collider.gameObject.layer)}");
+            }
+            return false;
+        }
+
+        // Can see!
+        if (debugDetection) Debug.Log($"[{name}] SUCCESS: Can see target!");
+        return true;
     }
 
     void OnPlayerDetected(Transform player)
@@ -405,7 +1369,214 @@ public class TacticalAI : MonoBehaviourPun
         {
             Debug.Log($"{gameObject.name}: Player detected! Engaging!");
             TransitionToState(AIState.Combat);
+
+            // ALERT NEARBY TEAMMATES IMMEDIATELY
+            AlertNearbyAllies(player.position);
         }
+    }
+
+    /// <summary>
+    /// Alert all nearby AI teammates about player position
+    /// This makes AI coordinate and respond as a team
+    /// </summary>
+    void AlertNearbyAllies(Vector3 playerPosition)
+    {
+        // Find all nearby AI within communication range
+        Collider[] nearbyColliders = Physics.OverlapSphere(transform.position, 50f); // 50m communication range
+
+        int alliesAlerted = 0;
+        foreach (var col in nearbyColliders)
+        {
+            if (col.gameObject == gameObject) continue;
+
+            // Check if it's another AI
+            var allyAI = col.GetComponent<TacticalAI>();
+            if (allyAI == null)
+                allyAI = col.GetComponentInParent<TacticalAI>();
+
+            if (allyAI != null && allyAI.enabled)
+            {
+                // Don't alert if they're already in combat
+                if (allyAI.currentState == AIState.Combat) continue;
+
+                // Alert them to the player's position
+                allyAI.OnAllySpottedEnemy(playerPosition);
+                alliesAlerted++;
+            }
+        }
+
+        if (alliesAlerted > 0)
+        {
+            Debug.Log($"{gameObject.name}: Alerted {alliesAlerted} teammates about enemy at {playerPosition}!");
+        }
+    }
+
+    /// <summary>
+    /// Called when a teammate spots an enemy and alerts this AI
+    /// </summary>
+    public void OnAllySpottedEnemy(Vector3 enemyPosition)
+    {
+        Debug.Log($"{gameObject.name}: Teammate called out enemy at {enemyPosition}! Investigating!");
+
+        // Store the last known position
+        lastKnownPlayerPosition = enemyPosition;
+        hasLastKnownPosition = true;
+
+        // If we're just patrolling, go investigate
+        if (currentState == AIState.Patrol)
+        {
+            TransitionToState(AIState.Investigate);
+        }
+
+        // Increase alert level
+        alertLevel = Mathf.Max(alertLevel, 0.5f);
+    }
+
+    /// <summary>
+    /// Called when a door in this AI's room opens
+    /// </summary>
+    public void OnDoorOpened(Vector3 doorPosition, GameObject door)
+    {
+        // Ignore if dead, flashbanged, or compliant
+        if (!this.enabled || currentState == AIState.Flashbanged || currentState == AIState.Compliant)
+            return;
+
+        Debug.Log($"[TacticalAI] {gameObject.name}: Door {door.name} OPENED at {doorPosition}!");
+
+        // If we're in combat, don't get distracted by doors
+        if (currentState == AIState.Combat && currentTarget != null)
+        {
+            Debug.Log($"[TacticalAI] {gameObject.name}: In combat - ignoring door");
+            return;
+        }
+
+        // TURN TO LOOK AT THE DOOR
+        Vector3 directionToDoor = (doorPosition - transform.position).normalized;
+        directionToDoor.y = 0; // Keep on horizontal plane
+
+        if (directionToDoor != Vector3.zero)
+        {
+            // Smoothly turn toward door over 0.5 seconds
+            StartCoroutine(SmoothTurnToward(directionToDoor, 0.5f));
+            Debug.Log($"[TacticalAI] {gameObject.name}: Turning to face door at {doorPosition}");
+        }
+
+        // Raise alert level - someone might be coming through
+        alertLevel = Mathf.Max(alertLevel, 0.3f);
+
+        // If we're on patrol and door opens, go on alert
+        if (currentState == AIState.Patrol)
+        {
+            Debug.Log($"[TacticalAI] {gameObject.name}: Door opened while on patrol - going to Investigate state");
+            lastKnownPlayerPosition = doorPosition;
+            hasLastKnownPosition = true;
+            TransitionToState(AIState.Investigate);
+        }
+    }
+
+    /// <summary>
+    /// Called when a door in this AI's room closes
+    /// </summary>
+    public void OnDoorClosed(Vector3 doorPosition, GameObject door)
+    {
+        // Ignore if dead, flashbanged, or compliant
+        if (!this.enabled || currentState == AIState.Flashbanged || currentState == AIState.Compliant)
+            return;
+
+        Debug.Log($"[TacticalAI] {gameObject.name}: Door {door.name} CLOSED at {doorPosition}");
+
+        // Less important than opening, but still worth noting
+        // Someone might have just passed through
+    }
+
+    /// <summary>
+    /// Smoothly turn toward a direction over time
+    /// </summary>
+    System.Collections.IEnumerator SmoothTurnToward(Vector3 direction, float duration)
+    {
+        Quaternion targetRotation = Quaternion.LookRotation(direction);
+        Quaternion startRotation = transform.rotation;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+            transform.rotation = Quaternion.Slerp(startRotation, targetRotation, t);
+            yield return null;
+        }
+
+        transform.rotation = targetRotation;
+    }
+
+    /// <summary>
+    /// Get current health percentage (0-1)
+    /// </summary>
+    float GetHealthPercentage()
+    {
+        var health = GetComponent<Opsive.UltimateCharacterController.Traits.Health>();
+        if (health == null) return 1f;
+
+        try
+        {
+            var healthType = health.GetType();
+
+            float currentHealth = 0f;
+            var valueProperty = healthType.GetProperty("Value");
+            if (valueProperty != null)
+            {
+                currentHealth = (float)valueProperty.GetValue(health);
+            }
+
+            float maxHealth = 100f;
+            var maxHealthProperty = healthType.GetProperty("MaxHealth");
+            if (maxHealthProperty == null)
+                maxHealthProperty = healthType.GetProperty("MaxHealthValue");
+            if (maxHealthProperty == null)
+                maxHealthProperty = healthType.GetProperty("Max");
+
+            if (maxHealthProperty != null)
+            {
+                maxHealth = (float)maxHealthProperty.GetValue(health);
+            }
+
+            return Mathf.Clamp01(currentHealth / maxHealth);
+        }
+        catch
+        {
+            return 1f;
+        }
+    }
+
+    /// <summary>
+    /// Check if AI should tactically retreat due to being wounded
+    /// </summary>
+    bool ShouldTacticalRetreat()
+    {
+        float healthPercent = GetHealthPercentage();
+
+        // If critically wounded (below 30% health), consider retreating
+        if (healthPercent < 0.3f)
+        {
+            // 70% chance to retreat when critically wounded
+            if (Random.value < 0.7f)
+            {
+                Debug.Log($"{gameObject.name}: CRITICALLY WOUNDED ({healthPercent * 100f:F0}% HP) - tactical retreat!");
+                return true;
+            }
+        }
+        // If wounded (below 50% health), might retreat
+        else if (healthPercent < 0.5f)
+        {
+            // 30% chance to retreat when wounded
+            if (Random.value < 0.3f)
+            {
+                Debug.Log($"{gameObject.name}: Wounded ({healthPercent * 100f:F0}% HP) - tactical retreat!");
+                return true;
+            }
+        }
+
+        return false;
     }
 
     void UpdateAlertLevel()
@@ -428,11 +1599,37 @@ public class TacticalAI : MonoBehaviourPun
 
     void TryShootTarget()
     {
-        if (currentTarget == null) return;
+        if (currentTarget == null && !hasLastKnownPosition) return;
         if (characterLocomotion == null || useAbility == null) return;
 
-        // Check if can see target
-        if (!CanSeeTarget(currentTarget)) return;
+        // Check if advanced tactics allow shooting (for peek/hide behavior)
+        if (advancedTactics != null && !advancedTactics.ShouldAllowShooting())
+        {
+            // AI is in cover, not peeking - don't shoot
+            return;
+        }
+
+        // SUPPRESSIVE FIRE: If we can't see target but know where they were, shoot there anyway
+        bool canSeeTarget = currentTarget != null && CanSeeTarget(currentTarget);
+        bool usingSuppressiveFire = false;
+
+        if (!canSeeTarget && hasLastKnownPosition)
+        {
+            // 40% chance to lay down suppressive fire at last known position
+            if (Random.value < 0.4f)
+            {
+                usingSuppressiveFire = true;
+                Debug.Log($"{gameObject.name}: SUPPRESSIVE FIRE at last known position!");
+            }
+            else
+            {
+                return; // Don't shoot if can't see and not doing suppressive fire
+            }
+        }
+        else if (!canSeeTarget)
+        {
+            return; // Can't see and no last known position
+        }
 
         // Don't try to fire while reloading.
         if (reloadAbility != null && reloadAbility.IsActive) return;
@@ -443,8 +1640,25 @@ public class TacticalAI : MonoBehaviourPun
             characterLocomotion.TryStartAbility(aimAbility);
         }
 
+        // Aim at the right target
+        Vector3 aimTarget = usingSuppressiveFire ? lastKnownPlayerPosition : currentTarget.position;
+
+        // Add random spread for suppressive fire (less accurate)
+        if (usingSuppressiveFire)
+        {
+            aimTarget += new Vector3(
+                Random.Range(-2f, 2f),
+                Random.Range(-1f, 1f),
+                Random.Range(-2f, 2f)
+            );
+        }
+
+        LookAtTarget(aimTarget);
+
         // Apply accuracy (skip *this* pull of the trigger, not the whole cycle).
-        if (Random.value > accuracy) return;
+        // Suppressive fire is less accurate
+        float effectiveAccuracy = usingSuppressiveFire ? accuracy * 0.3f : accuracy;
+        if (Random.value > effectiveAccuracy) return;
 
         // Use is a press/release ability. Release any prior press so the next
         // Start is actually allowed to begin — otherwise IsActive stays true
@@ -459,6 +1673,19 @@ public class TacticalAI : MonoBehaviourPun
         {
             dryFireCount = 0;
             Debug.Log($"{gameObject.name}: Firing at target!");
+
+            // Notify room awareness system of gunshot
+            var roomAwareness = GetComponent<Klyra.AI.AIRoomAwareness>();
+            if (roomAwareness != null)
+            {
+                roomAwareness.OnWeaponFired();
+            }
+
+            // Notify advanced tactics that we fired a shot
+            if (advancedTactics != null)
+            {
+                advancedTactics.OnShotFired();
+            }
         }
         else
         {
@@ -530,7 +1757,7 @@ public class TacticalAI : MonoBehaviourPun
         }
     }
 
-    IEnumerator ComplyWithCommand()
+    public IEnumerator ComplyWithCommand()
     {
         AIState previousState = currentState;
         TransitionToState(AIState.Compliant);
@@ -618,6 +1845,100 @@ public class TacticalAI : MonoBehaviourPun
 
     #endregion
 
+    #region Cover System
+
+    /// <summary>
+    /// Immediately find and move to nearest cover
+    /// </summary>
+    void SeekNearestCover(Vector3 threatPosition)
+    {
+        if (!useCover) return;
+
+        // Release old cover
+        if (currentCoverPoint != null)
+        {
+            currentCoverPoint.Release();
+            currentCoverPoint = null;
+            hasValidCover = false;
+        }
+
+        // Find nearest cover
+        CoverPoint cover = CoverPoint.FindBestCover(transform.position, threatPosition, coverSearchRange);
+        if (cover != null && cover.Reserve())
+        {
+            currentCoverPoint = cover;
+            hasValidCover = true;
+
+            // Move to cover immediately
+            Vector3 coverPos = currentCoverPoint.GetCoverPosition();
+            SetDestination(coverPos);
+
+            Debug.Log($"{gameObject.name}: Moving to cover at {cover.name} due to gunshot!");
+        }
+        else
+        {
+            Debug.LogWarning($"{gameObject.name}: No cover found nearby!");
+        }
+    }
+
+    /// <summary>
+    /// Release current cover when leaving combat or dying
+    /// </summary>
+    /// <summary>
+    /// Find nearest cover point for retreating
+    /// </summary>
+    CoverPoint FindNearestCover()
+    {
+        Vector3 threatPos = currentTarget != null ? currentTarget.position : lastKnownPlayerPosition;
+        return CoverPoint.FindBestCover(transform.position, threatPos, coverSearchRange);
+    }
+
+    void ReleaseCover()
+    {
+        if (currentCoverPoint != null)
+        {
+            currentCoverPoint.Release();
+            currentCoverPoint = null;
+            hasValidCover = false;
+        }
+    }
+
+    #endregion
+
+    #region Public Methods for Advanced Tactics
+
+    /// <summary>
+    /// Force AI to find and move to cover (called by AdvancedAICombatTactics)
+    /// </summary>
+    public void ForceSeekCover()
+    {
+        if (!useCover || currentState != AIState.Combat) return;
+
+        // Find cover
+        CoverPoint cover = CoverPoint.FindBestCover(transform.position,
+            currentTarget != null ? currentTarget.position : transform.position,
+            coverSearchRange);
+
+        if (cover != null && cover.Reserve())
+        {
+            // Release previous cover if any
+            if (currentCoverPoint != null)
+            {
+                currentCoverPoint.Release();
+            }
+
+            currentCoverPoint = cover;
+            hasValidCover = true;
+            Debug.Log($"{gameObject.name}: Force seeking cover at {cover.name}");
+        }
+        else
+        {
+            Debug.Log($"{gameObject.name}: No cover available to seek");
+        }
+    }
+
+    #endregion
+
     #region State Management
 
     void TransitionToState(AIState newState)
@@ -643,6 +1964,8 @@ public class TacticalAI : MonoBehaviourPun
                     characterLocomotion.TryStopAbility(useAbility);
                 }
                 dryFireCount = 0;
+                // Release cover when leaving combat
+                ReleaseCover();
                 break;
         }
 
@@ -653,10 +1976,15 @@ public class TacticalAI : MonoBehaviourPun
         {
             case AIState.Patrol:
                 alertLevel = 0f;
-                if (patrolWaypoints != null && patrolWaypoints.Length > 0)
+                if (movementMode == MovementMode.Patrol && patrolWaypoints != null && patrolWaypoints.Length > 0)
                 {
                     SetDestination(patrolWaypoints[currentWaypointIndex].position);
                 }
+                else if (movementMode == MovementMode.Roam)
+                {
+                    PickNewRoamTarget();
+                }
+                // Idle mode - just stay put
                 break;
 
             case AIState.Combat:
@@ -674,13 +2002,110 @@ public class TacticalAI : MonoBehaviourPun
         if (pathfindingMovement != null)
         {
             pathfindingMovement.SetDestination(destination);
+
+            if (advancedTactics != null && advancedTactics.debugTactics && hasValidCover && Time.frameCount % 60 == 0)
+            {
+                Debug.Log($"{gameObject.name}: SetDestination via PathfindingMovement to {destination} (distance: {Vector3.Distance(transform.position, destination):F1}m)");
+            }
             return;
         }
 
         if (navAgent != null && navAgent.isOnNavMesh)
         {
             navAgent.SetDestination(destination);
+
+            if (advancedTactics != null && advancedTactics.debugTactics && hasValidCover && Time.frameCount % 60 == 0)
+            {
+                Debug.Log($"{gameObject.name}: SetDestination via NavAgent to {destination} (distance: {Vector3.Distance(transform.position, destination):F1}m)");
+            }
         }
+        else if (advancedTactics != null && advancedTactics.debugTactics)
+        {
+            Debug.LogWarning($"{gameObject.name}: Cannot set destination - NavAgent null or not on NavMesh!");
+        }
+    }
+
+    #endregion
+
+    #region Room Awareness
+
+    /// <summary>
+    /// Called by RoomVolume when AI enters a room
+    /// </summary>
+    public void OnEnteredRoom(Klyra.AI.RoomVolume room)
+    {
+        if (!enableRoomAwareness) return;
+
+        currentRoom = room;
+
+        if (debugRooms)
+        {
+            Debug.Log($"[{gameObject.name}] Entered {room.roomName} (Floor {room.floorNumber})");
+        }
+    }
+
+    /// <summary>
+    /// Called by RoomVolume when AI exits a room
+    /// </summary>
+    public void OnExitedRoom(Klyra.AI.RoomVolume room)
+    {
+        if (!enableRoomAwareness) return;
+
+        if (currentRoom == room)
+        {
+            currentRoom = null;
+        }
+
+        if (debugRooms)
+        {
+            Debug.Log($"[{gameObject.name}] Exited {room.roomName}");
+        }
+    }
+
+    /// <summary>
+    /// Get the room this AI is currently in
+    /// </summary>
+    public Klyra.AI.RoomVolume GetCurrentRoom()
+    {
+        return currentRoom;
+    }
+
+    /// <summary>
+    /// Get the room the player was last seen in
+    /// </summary>
+    public Klyra.AI.RoomVolume GetLastKnownPlayerRoom()
+    {
+        return lastKnownPlayerRoom;
+    }
+
+    /// <summary>
+    /// Update player's last known room (called when detecting player)
+    /// </summary>
+    void UpdatePlayerRoom(Transform player)
+    {
+        if (!enableRoomAwareness || player == null) return;
+
+        var playerRoom = Klyra.AI.RoomManager.GetRoomAtPosition(player.position);
+        if (playerRoom != null && playerRoom != lastKnownPlayerRoom)
+        {
+            lastKnownPlayerRoom = playerRoom;
+
+            if (debugRooms)
+            {
+                Debug.Log($"[{gameObject.name}] Player spotted in {playerRoom.roomName}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Check if AI is in the same room as target
+    /// </summary>
+    public bool IsInSameRoomAs(Transform target)
+    {
+        if (!enableRoomAwareness || currentRoom == null) return false;
+
+        var targetRoom = Klyra.AI.RoomManager.GetRoomAtPosition(target.position);
+        return targetRoom == currentRoom;
     }
 
     #endregion
@@ -689,6 +2114,8 @@ public class TacticalAI : MonoBehaviourPun
 
     void OnDrawGizmosSelected()
     {
+        if (!debugVision) return;
+
         // Sight range
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, sightRange);
@@ -707,6 +2134,10 @@ public class TacticalAI : MonoBehaviourPun
             Gizmos.color = Color.cyan;
             Gizmos.DrawRay(eyePosition.position, rightBound * sightRange);
             Gizmos.DrawRay(eyePosition.position, leftBound * sightRange);
+
+            // Draw center vision ray
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawRay(eyePosition.position, forward * sightRange);
         }
 
         // Current target
@@ -714,6 +2145,7 @@ public class TacticalAI : MonoBehaviourPun
         {
             Gizmos.color = Color.red;
             Gizmos.DrawLine(transform.position, currentTarget.position);
+            Gizmos.DrawWireSphere(currentTarget.position, 0.5f);
         }
 
         // Last known position
@@ -721,6 +2153,35 @@ public class TacticalAI : MonoBehaviourPun
         {
             Gizmos.color = Color.magenta;
             Gizmos.DrawWireSphere(lastKnownPlayerPosition, 0.5f);
+        }
+
+        // Roaming area (if in roam mode)
+        if (movementMode == MovementMode.Roam)
+        {
+            Gizmos.color = new Color(0f, 1f, 0f, 0.1f);
+            Gizmos.DrawWireSphere(spawnPosition, roamRadius);
+
+            // Current roam target
+            if (hasRoamTarget)
+            {
+                Gizmos.color = Color.green;
+                Gizmos.DrawWireSphere(currentRoamTarget, 0.5f);
+                Gizmos.DrawLine(transform.position, currentRoamTarget);
+            }
+        }
+
+        // Draw NavMesh path
+        if (navAgent != null && navAgent.hasPath)
+        {
+            Gizmos.color = Color.white;
+            var path = navAgent.path;
+            Vector3 prevCorner = transform.position;
+            foreach (var corner in path.corners)
+            {
+                Gizmos.DrawLine(prevCorner, corner);
+                Gizmos.DrawWireSphere(corner, 0.3f);
+                prevCorner = corner;
+            }
         }
     }
 

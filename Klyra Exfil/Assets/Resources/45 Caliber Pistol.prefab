@@ -621,7 +621,7 @@ MonoBehaviour:
     m_Preset: {fileID: 0}
     m_BlockList: []
     m_Default: 1
-  m_ItemDefinition: {fileID: 4021143365342896098, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
+  m_ItemDefinition: {fileID: 0}
   m_SlotID: 0
   m_AnimatorItemID: 2
   m_AnimatorMovementSetID: 0
@@ -766,7 +766,7 @@ MonoBehaviour:
   m_ActionDescription: 
   m_DebugLogger:
     m_DebugAction: 0
-    m_CharacterItemActionDebugModuleType: 0
+    m_CharacterItemActionDebugModuleType: 2
   m_UseRate: 0.1
   m_FaceTarget: 1
   m_StopUseAbilityOnCompleteDelay: 1
@@ -873,7 +873,7 @@ MonoBehaviour:
         m_Enabled: 1
         m_ID: -1
         m_Name: 
-        m_AmmoItemDefinition: {fileID: 4906038157856389806, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
+        m_AmmoItemDefinition: {fileID: -8965433290464924485, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
         m_DropOption: 2
         m_SharedAmmoItemIdentifier: 0
     - rid: 1894418368635339032

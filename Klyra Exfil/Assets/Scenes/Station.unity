@@ -4141,29 +4141,37 @@ MonoBehaviour:
   - Sheriff
   maxWeight: 20
   availableItems:
-  - item: {fileID: 8192739638633277009, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
+  - item: {fileID: -8965433290464924485, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
     category: 3
-    weightPerUnit: 0.1
-    spawnCharacterItem: 1
-  - item: {fileID: 4906038157856389806, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
-    category: 3
-    weightPerUnit: 0.1
+    weightPerUnit: 0.025
     spawnCharacterItem: 0
-  - item: {fileID: 4021143365342896098, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
+  - item: {fileID: -1544054919566903698, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
+    category: 3
+    weightPerUnit: 0.02
+    spawnCharacterItem: 0
+  - item: {fileID: -3411510323404076407, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
     category: 2
-    weightPerUnit: 3
-    spawnCharacterItem: 0
-  - item: {fileID: 3539424784704282294, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
+    weightPerUnit: 1
+    spawnCharacterItem: 1
+  - item: {fileID: 4709046370269532892, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
     category: 1
-    weightPerUnit: 7
-    spawnCharacterItem: 1
-  - item: {fileID: -5310187782341302983, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
-    category: 4
     weightPerUnit: 2
     spawnCharacterItem: 1
-  - item: {fileID: 8646973414647546444, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
+  - item: {fileID: -1868855479715034983, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
     category: 4
-    weightPerUnit: 2
+    weightPerUnit: 0.5
+    spawnCharacterItem: 0
+  - item: {fileID: -1070351463115255372, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
+    category: 4
+    weightPerUnit: 1
+    spawnCharacterItem: 0
+  - item: {fileID: 7475287155718836374, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
+    category: 1
+    weightPerUnit: 3
+    spawnCharacterItem: 1
+  - item: {fileID: 2064706100624907577, guid: 16d30180d9012ca48889477ac8da5303, type: 2}
+    category: 3
+    weightPerUnit: 0.01
     spawnCharacterItem: 0
 --- !u!4 &140768401
 Transform:
@@ -18246,6 +18254,14 @@ MonoBehaviour:
     sceneName: CrimeHouse
     description: CrimeHouse
     thumbnail: {fileID: 0}
+  - missionName: Office
+    sceneName: Office
+    description: Office
+    thumbnail: {fileID: 0}
+  - missionName: Warehouse
+    sceneName: Warehouse
+    description: Warehosue
+    thumbnail: {fileID: 0}
   openMenuSound: {fileID: 0}
   selectMissionSound: {fileID: 0}
 --- !u!1 &882885593
@@ -20662,11 +20678,12 @@ MonoBehaviour:
   m_AutoAnchor: 0
   m_AutoAnchorBone: 10
   m_AnchorOffset: {x: 0, y: 1.8, z: 0}
-  m_ViewTypeFullName: Opsive.UltimateCharacterController.ThirdPersonController.Camera.ViewTypes.Combat
-  m_FirstPersonViewTypeFullName: 
+  m_ViewTypeFullName: Opsive.UltimateCharacterController.FirstPersonController.Camera.ViewTypes.Combat
+  m_FirstPersonViewTypeFullName: Opsive.UltimateCharacterController.FirstPersonController.Camera.ViewTypes.Combat
   m_ThirdPersonViewTypeFullName: Opsive.UltimateCharacterController.ThirdPersonController.Camera.ViewTypes.Combat
   m_ViewTypes:
   - rid: 1894418382434074756
+  - rid: 1894418415798190237
   m_CanChangePerspectives: 1
   m_CanZoom: 1
   m_ZoomState: Zoom
@@ -20751,6 +20768,93 @@ MonoBehaviour:
         m_PitchLimit:
           m_MinValue: -72
           m_MaxValue: 72
+    - rid: 1894418415798190237
+      type: {class: Combat, ns: Opsive.UltimateCharacterController.FirstPersonController.Camera.ViewTypes, asm: Opsive.UltimateCharacterController}
+      data:
+        m_States:
+        - m_Name: Default
+          m_Preset: {fileID: 0}
+          m_BlockList: []
+          m_Default: 1
+        m_FieldOfView: 70
+        m_FieldOfViewDamping: 0.2
+        m_LookDirectionDistance: 100
+        m_LookOffset: {x: 0, y: -0.1, z: 0.27}
+        m_LookDownOffset: {x: 0, y: 0, z: 0.28}
+        m_CullingMask:
+          serializedVersion: 2
+          m_Bits: 3758096383
+        m_FirstPersonPositionOffset: {x: 0, y: 0, z: 0}
+        m_FirstPersonRotationOffset: {x: 0, y: 0, z: 0}
+        m_OverlayRenderType: 1
+        m_FirstPersonCamera: {fileID: 0}
+        m_FirstPersonCullingMask:
+          serializedVersion: 2
+          m_Bits: 536870912
+        m_SynchronizeFieldOfView: 1
+        m_FirstPersonFieldOfView: 30
+        m_FirstPersonFieldOfViewDamping: 0.2
+        m_PositionLowerVerticalLimit: 0.25
+        m_PositionFallImpact: 2
+        m_PositionFallImpactSoftness: 4
+        m_RotationStrafeRoll: 0.01
+        m_RotationFallImpact: 0.1
+        m_RotationFallImpactSoftness: 1
+        m_SecondaryRotationSpeed: 0.8
+        m_PositionSpring:
+          m_Stiffness: 0.2
+          m_Damping: 0.25
+          m_VelocityFadeInLength: 1
+          m_MaxSoftForceFrames: 120
+          m_MinVelocity: 0.00001
+          m_MaxVelocity: 10000
+          m_MinValue: {x: -10000, y: -10000, z: -10000}
+          m_MaxValue: {x: 10000, y: 10000, z: 10000}
+        m_RotationSpring:
+          m_Stiffness: 0.2
+          m_Damping: 0.25
+          m_VelocityFadeInLength: 1
+          m_MaxSoftForceFrames: 120
+          m_MinVelocity: 0.00001
+          m_MaxVelocity: 10000
+          m_MinValue: {x: -10000, y: -10000, z: -10000}
+          m_MaxValue: {x: 10000, y: 10000, z: 10000}
+        m_SecondaryPositionSpring:
+          m_Stiffness: 0.2
+          m_Damping: 0.25
+          m_VelocityFadeInLength: 1
+          m_MaxSoftForceFrames: 120
+          m_MinVelocity: 0.00001
+          m_MaxVelocity: 10000
+          m_MinValue: {x: -10000, y: -10000, z: -10000}
+          m_MaxValue: {x: 10000, y: 10000, z: 10000}
+        m_SecondaryRotationSpring:
+          m_Stiffness: 0.2
+          m_Damping: 0.25
+          m_VelocityFadeInLength: 1
+          m_MaxSoftForceFrames: 120
+          m_MinVelocity: 0.00001
+          m_MaxVelocity: 10000
+          m_MinValue: {x: -10000, y: -10000, z: -10000}
+          m_MaxValue: {x: 10000, y: 10000, z: 10000}
+        m_PitchLimit:
+          m_MinValue: -72
+          m_MaxValue: 72
+        m_BobPositionalRate: {x: 0, y: 1.4, z: 0}
+        m_BobPositionalAmplitude: {x: 0, y: 0.35, z: 0}
+        m_BobRollRate: 0.9
+        m_BobRollAmplitude: 1.7
+        m_BobInputVelocityScale: 1
+        m_BobMaxInputVelocity: 1000
+        m_BobMinTroughVerticalOffset: -0.01
+        m_BobTroughForce: {x: 0, y: 0, z: 0}
+        m_BobRequireGroundContact: 1
+        m_ShakeSpeed: 0.1
+        m_ShakeAmplitude: {x: 10, y: 10, z: 0}
+        m_SmoothHeadOffsetSteps: 2
+        m_CollisionRadius: 0.05
+        m_RotateWithHead: 0
+        m_VerticalOffsetLerpSpeed: 0.2
 --- !u!1001 &963443672
 PrefabInstance:
   m_ObjectHideFlags: 0
